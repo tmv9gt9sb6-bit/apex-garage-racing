@@ -67,9 +67,10 @@ input[type=range]{padding:0}
 #speed{font-size:min(calc(52px*var(--scale)),12vw);font-weight:800;line-height:1;white-space:nowrap}
 .hud{max-width:46vw;box-sizing:border-box;overflow:hidden}.hud div{overflow-wrap:anywhere;max-width:100%}
 #raceWrap{overflow:hidden}
-#hudBR{right:12px;left:auto;max-width:min(320px,calc(100vw - 24px));width:fit-content}
+#hudBR{right:28px;left:auto;max-width:min(320px,calc(100vw - 56px));width:fit-content}
 #hudBR>div{white-space:normal}
-#hudBR .nitrobar{width:min(160px,calc(100vw - 80px))}
+#hudBR .nitrobar{width:min(160px,calc(100vw - 120px))}
+#hudTR{right:28px}
 body.cb .poscol{outline:2px solid #fff;outline-offset:1px}body.cb .scrim{border-color:#fff}
 #hudTL div,#hudBR div{font-size:calc(16px*var(--scale))}
 #msg{top:66px;left:50%;transform:translateX(-50%);white-space:nowrap;max-width:90vw;overflow:hidden;text-overflow:ellipsis}
@@ -388,7 +389,7 @@ function renderGarage(){
  else{ctx.fillStyle="#C7D2DE";ctx.fillRect(0,0,cv.width,cv.height);ctx.fillStyle="rgba(0,0,0,.12)";ctx.beginPath();ctx.ellipse(380,240,180,40,0,0,Math.PI*2);ctx.fill();}
  drawCar(ctx,380,190,showAng,d,3.2,true);
  ctx.fillStyle=showNight?"#AAB4C6":"#334155";ctx.font="700 16px system-ui";ctx.textAlign="left";ctx.fillText(d.name+" · "+BODIES.find(b=>b.id===d.body).name,16,30);ctx.fillText("Finish: "+d.finish+" · Top-down race zoom",16,52);
- $("savedList").innerHTML=save.designs.map((x,i)=>`<div class="row"><button class="btn2" style="flex:1;text-align:left" onclick="loadDesign(${i})">${i===save.current?"✓ ":""}${x.name} — ${BODIES.find(b=>b.id===x.body)?.name||x.body}</button><button class="btn2" onclick="deleteDesign(${i})">Delete</button></div>`).join("");
+ $("savedList").innerHTML=save.designs.map((x,i)=>{const locked=isLockedDesign(x); const price=(BODIES.find(b=>b.id===x.body)||{}).price||0; return `<div class="row"><button class="btn2" style="flex:1;text-align:left" onclick="loadDesign(${i})">${i===save.current?"✓ ":""}${x.name} — ${BODIES.find(b=>b.id===x.body)?.name||x.body}${locked?` 🔒 Locked — buy for ${price} credits`:""}</button><button class="btn2" onclick="deleteDesign(${i})">Delete</button></div>`;}).join("")+`<div class="row" style="margin-top:8px"><button class="btn2" onclick="purgeLocked()">Remove locked designs</button></div><p class="small">Locked designs are unowned paid bodies saved by an older build. They cannot be raced for free — load one to buy it if you have enough credits, or remove them.</p>`;
 }
 function toggleDayNight(){showNight=!showNight;$("dayNightBtn").textContent=showNight?"☀️ Day preview":"🌙 Night preview";renderGarage();}
 function rotateCar(){showAng+=Math.PI/6;renderGarage();}
@@ -403,8 +404,10 @@ function saveDesign(){const d=readGarageForm(); if(d.text.length>12){toast("Roof
  if(body.price>0 && !owned){save.credits-=body.price;save.ownedBodies.push(d.body);toast(body.name+" unlocked for "+body.price+" credits. Credits left: "+save.credits+".");}
  if(save.designs.length>=20 && !save.designs.includes(d)) save.designs.shift();
  save.designs[save.current]=d; previewDesign=null; persist(); renderGarage(); toast("Design saved. Share code is ready to copy."); return true;}
-function loadDesign(i){previewDesign=null;save.current=i;persist();renderGarage();}
-function deleteDesign(i){if(save.designs.length<=1){toast("Keep at least one design.");return;} save.designs.splice(i,1);save.current=0;persist();renderGarage();}
+function isLockedDesign(d){if(!d) return false; const b=BODIES.find(x=>x.id===d.body); if(!b||!b.price) return false; save.ownedBodies=save.ownedBodies||[]; return !save.ownedBodies.includes(d.body);}
+function loadDesign(i){const d=save.designs[i]; if(isLockedDesign(d)){const b=BODIES.find(x=>x.id===d.body); if(save.credits>=b.price){save.credits-=b.price;save.ownedBodies=save.ownedBodies||[];save.ownedBodies.push(d.body);previewDesign=null;save.current=i;persist();renderGarage();toast(d.name+" unlocked for "+b.price+" credits. Credits left: "+save.credits+".");} else {toast("Locked — "+b.name+" costs "+b.price+" credits, you have "+save.credits+". Earn credits, or remove locked designs.");} return;} previewDesign=null;save.current=i;persist();renderGarage();}
+function deleteDesign(i){const d=save.designs[i]; if(save.designs.length<=1&&!isLockedDesign(d)){toast("Keep at least one design.");return;} save.designs.splice(i,1); if(!save.designs.length) save.designs=[defaultDesign()]; save.current=0;persist();renderGarage();toast(isLockedDesign(d)?"Locked design removed.":"Design deleted.");}
+function purgeLocked(){const before=save.designs.length; save.designs=save.designs.filter(d=>!isLockedDesign(d)); if(!save.designs.length) save.designs=[defaultDesign()]; save.current=0;persist();renderGarage();toast("Removed "+(before-save.designs.length)+" locked design(s).");}
 function useInRace(){if(!saveDesign()){toast("That car was not saved, so it will not be used in your next race.");return;} showScreen("setup");toast("This car will be used in your next race.");}
 function copyShare(){const el=$("shareOut");el.select();try{document.execCommand("copy");}catch(e){} toast("Share code copied.");}
 function normalizeDesign(d){
@@ -574,6 +577,7 @@ function makeCar(design,isPlayer,idx,name){
 }
 function startRace(){
  ensureAudio();
+ if(isLockedDesign(curDesign())){toast("That design is locked — buy its body in Garage first, or pick a free body. It cannot be raced for free.");showScreen("garage");return;}
  const ti=+$("trackSel").value, track=TRACKS[ti], pts=splinePts(CTRL[ti],true);
  const opp=+$("oppSel").value, laps=+$("lapSel").value, diff=$("aiSel").value;
  const cars=[];const me=makeCar(curDesign(),true,0,$("playerName").value||"You");cars.push(me);
