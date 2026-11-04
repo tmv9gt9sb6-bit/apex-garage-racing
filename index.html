@@ -64,7 +64,9 @@ input[type=range]{padding:0}
 #hudTR{top:66px;right:12px;text-align:right}
 #hudBR{bottom:calc(28% + 12px);right:12px;text-align:right}
 #hudBL{bottom:calc(28% + 12px);left:12px}
-#speed{font-size:64px;font-weight:800;line-height:1}
+#speed{font-size:min(calc(64px*var(--scale)),18vw);font-weight:800;line-height:1}
+.hud{max-width:46vw}.hud div{overflow-wrap:anywhere}
+#hudTL div,#hudBR div{font-size:calc(16px*var(--scale))}
 #msg{top:66px;left:50%;transform:translateX(-50%);white-space:nowrap;max-width:90vw;overflow:hidden;text-overflow:ellipsis}
 @media(max-width:720px){#speed{font-size:48px}#hudTR canvas{width:104px;height:72px}}
 body.projector #speed{font-size:80px}body.projector .scrim{background:#000}
@@ -172,15 +174,24 @@ body.highcontrast .scrim{background:#000}body.highcontrast{--muted:#fff}
 <!-- MULTIPLAYER -->
 <section id="scr-multi" class="screen">
 <h1>Multiplayer lobby</h1>
-<p>Online play uses Firebase Realtime Database (free tier, anonymous auth only). <b style="color:var(--amber)">Firebase is not configured in this build</b> — the config below is a placeholder you replace (see README). The game never shows a blank screen: if online is unavailable, race offline vs AI, local 2-player, or Time Trial instead.</p>
+<p>This lobby is the hub for the next race. Pick the game here, start it from here, and after the race you come back here for the next one — you do not drop back to the main menu. Remote play uses Firebase Realtime Database (free tier, anonymous auth only). <b style="color:var(--amber)">Firebase is not configured in this build</b> — the config below is a placeholder you replace (see README). Until then the lobby works locally / offline vs AI. The game never shows a blank screen: if online is unavailable, race offline vs AI, local 2-player, or Time Trial instead.</p>
 <div class="row"><button class="btnCyan" onclick="createRoom()">Create room</button><button class="btn2" onclick="joinRoom()">Join room by code</button></div>
 <label>Room code</label><input id="roomCode" class="mono" placeholder="APEX-1234">
 <label>Display name (no real name needed)</label><input id="playerName" maxlength="16" value="Racer 7">
+<h2>Pick the next game (host picks, everyone sees it)</h2>
+<div class="grid2">
+<label>Track<select id="lobbyTrackSel" onchange="lobbyPick()"></select></label>
+<label>Mode<select id="lobbyModeSel" onchange="lobbyPick()"><option>Quick Race</option><option>Drift Mode</option><option>Elimination</option></select></label>
+<label>Laps<select id="lobbyLapSel" onchange="lobbyPick()"><option>3</option><option>1</option><option>5</option></select></label>
+<label>Total cars<select id="lobbyCarsSel" onchange="lobbyPick()"><option value="8" selected>8 cars</option><option value="4">4 cars</option><option value="2">2 cars</option></select></label>
+<label>AI difficulty<select id="lobbyAiSel" onchange="lobbyPick()"><option>Rookie</option><option selected>Pro</option><option>Elite</option></select></label>
+</div>
+<p class="small" id="lobbyPickSummary"></p>
 <div id="lobbyBox"></div>
 <h2>Preset chat only (no free-text chat with strangers)</h2>
 <div class="row" id="chatBtns"></div><div id="chatLog" class="small"></div>
-<div class="row"><button class="btn" onclick="startMultiRace()">🏁 Start lobby race (offline vs AI if online unavailable)</button><button class="btn2" onclick="startSplit()">👥 Local 2-player: WASD + Arrows</button><button class="btn2" onclick="showScreen('menu')">Back</button></div>
-<p class="small">Ping: <span id="pingVal">— offline mode</span> · Sync: 20 Hz target when Firebase is configured, interpolated so cars glide, not teleport. Disconnects become ghost AI.</p>
+<div class="row"><button class="btn" onclick="startMultiRace()">🏁 Start lobby race</button><button class="btn2" onclick="startSplitFromLobby()">👥 Local 2-player from lobby: WASD + Arrows</button><button class="btn2" onclick="showScreen('menu')">Back</button></div>
+<p class="small">Ping: <span id="pingVal">— offline mode</span> · Sync: 20 Hz target when Firebase is configured, interpolated so cars glide, not teleport. Disconnects become ghost AI. After the race, use Return to lobby to pick the next game.</p>
 </section>
 
 <!-- SETTINGS -->
@@ -271,12 +282,13 @@ function curDesign(){return save.designs[save.current]||defaultDesign();}
 function calcStats(d){
  const b=BODIES.find(x=>x.id===d.body)||BODIES[0];
  let s={top:b.top,acc:b.acc,grip:b.grip,hand:b.hand,dur:b.dur};
- if(d.wheel==1){s.grip+=6;s.top-=6;} if(d.wheel==2){s.top+=6;s.grip-=6;}
- s.hand+=d.aero*4; s.top-=d.aero*3; s.grip+=d.aero*2;
- if(d.engine==1){s.acc+=10;s.top-=4;} if(d.engine==2){s.top+=10;s.acc-=4;}
+ const wheel=Number(d.wheel)||0, aero=Number(d.aero)||0, engine=Number(d.engine)||0, stance=Number(d.stance)||0, weight=Number(d.weight)||0;
+ if(wheel==1){s.grip+=6;s.top-=6;} if(wheel==2){s.top+=6;s.grip-=6;}
+ s.hand+=aero*4; s.top-=aero*3; s.grip+=aero*2;
+ if(engine==1){s.acc+=10;s.top-=4;} if(engine==2){s.top+=10;s.acc-=4;}
  if(d.tire==="sport"){s.grip+=5;s.top+=2;} if(d.tire==="rain"){s.grip+=3;} if(d.tire==="dirt"){s.grip+=6;s.top-=4;}
- if(d.stance==1){s.hand+=5;s.dur-=3;} if(d.stance==2){s.dur+=6;s.hand-=3;}
- if(d.weight==1){s.acc+=6;s.dur-=6;} if(d.weight==2){s.acc+=12;s.dur-=12;}
+ if(stance==1){s.hand+=5;s.dur-=3;} if(stance==2){s.dur+=6;s.hand-=3;}
+ if(weight==1){s.acc+=6;s.dur-=6;} if(weight==2){s.acc+=12;s.dur-=12;}
  for(const k in s) s[k]=Math.max(20,Math.min(100,s[k]));
  s.zero=Math.max(1.8,4.2-(s.acc/100)*2.2).toFixed(1);
  return s;
@@ -321,8 +333,9 @@ function drawCar(ctx,x,y,ang,d,scale,showroom){
 // ---------- Menu ----------
 const MENU=[["menu","Play","Quick Race, Career and all modes","▶ Play"],["setup","Quick Race","Pick a track, opponents and difficulty","🏁 Quick Race"],["career","Career","8-race championship, points and credits","🏆 Career"],["garage","Garage","Design your car — paint, parts, share code","🎨 Garage"],["setup","Time Trial","Beat your best lap, race your ghost","⏱ Time Trial"],["setup","Drift Mode","Score for angle, duration and combos","💨 Drift"],["setup","Elimination","Last place each lap is out","❌ Elimination"],["multi","Multiplayer","Room codes, lobby, local 2-player","👥 Multiplayer"],["settings","Settings","Sound, graphics, controls, accessibility","⚙ Settings"],["about","Help & Embed","Google Sites embed steps and testing","❓ Help"]];
 function buildMenu(){
- $("menuGrid").innerHTML=MENU.map(m=>`<button class="card" onclick="menuGo('${m[0]}','${m[1]}')"><strong>${m[3]} ${m[1]}</strong><span>${m[2]}</span></button>`).join("");
+ $("menuGrid").innerHTML=MENU.map(m=>`<button class="card" onclick="menuGo('${m[0]}','${m[1]}')"><strong>${m[3]}</strong><span>${m[2]}</span></button>`).join("");
  $("trackSel").innerHTML=TRACKS.map((t,i)=>`<option value="${i}">${t.name} — ${t.weather}</option>`).join("");
+ $("lobbyTrackSel").innerHTML=TRACKS.map((t,i)=>`<option value="${i}">${t.name} — ${t.weather}</option>`).join("");
  $("bodySel").innerHTML=BODIES.map(b=>`<option value="${b.id}">${b.name} — ${b.price?b.price+" credits":"Free"}</option>`).join("");
  $("chatBtns").innerHTML=["Good luck!","Nice driving!","Watch out!","Great race!"].map(p=>`<button class="btn2" onclick="sendChat('${p}')">${p}</button>`).join("");
 }
@@ -385,7 +398,24 @@ function loadDesign(i){save.current=i;persist();renderGarage();}
 function deleteDesign(i){if(save.designs.length<=1){toast("Keep at least one design.");return;} save.designs.splice(i,1);save.current=0;persist();renderGarage();}
 function useInRace(){saveDesign();showScreen("setup");toast("This car will be used in your next race.");}
 function copyShare(){const el=$("shareOut");el.select();try{document.execCommand("copy");}catch(e){} toast("Share code copied.");}
-function importShare(){const d=decodeShare($("shareIn").value); if(!d){toast("That share code did not decode. Check it and try again.");return;} save.designs.push(d);save.current=save.designs.length-1;persist();renderGarage();toast("Design imported: "+(d.name||"Imported car"));}
+function normalizeDesign(d){
+ // Share codes must never produce NaN stats or blank dropdowns, even if
+ // a code uses older/string part names instead of numeric indices.
+ const base=defaultDesign(); const out=Object.assign({},base,d||{});
+ const map=(v,table)=>{if(typeof v==="number") return v; const k=String(v||"").toLowerCase(); return table[k]!==undefined?table[k]:0;};
+ out.wheel=map(d.wheel||d.wheels||d.whons,{standard:0,large:1,small:2});
+ out.aero=map(d.aero!==undefined?d.aero:d.spoiler,{none:0,small:1,full:2,wing:2,plates:3,"full+plates":3});
+ out.engine=map(d.engine,{balanced:0,accel:1,acceleration:1,top:2,topspeed:2,"top-speed":2});
+ out.stance=map(d.stance,{standard:0,lowered:1,raised:2});
+ out.weight=map(d.weight,{none:0,light:1,lightweight:1,full:2,strip:2,"full strip":2});
+ out.tire=(d.tire||d.tires||"street"); if(!["street","sport","rain","dirt"].includes(out.tire)) out.tire="street";
+ out.body=BODIES.some(b=>b.id===out.body)?out.body:"hatch";
+ out.finish=["metallic","gloss","matte"].includes(out.finish)?out.finish:"metallic";
+ out.decals=(Array.isArray(out.decals)?out.decals:[]).map(x=>({"star":"★","bolt":"⚡","diamond":"◆","dot":"●"})[String(x).toLowerCase()]||x).slice(0,4);
+ out.number=String(out.number||"7").slice(0,2); out.text=String(out.text||"").slice(0,12);
+ return out;
+}
+function importShare(){const d=decodeShare($("shareIn").value); if(!d){toast("That share code did not decode. Check it and try again.");return;} const nd=normalizeDesign(d); save.designs.push(nd);save.current=save.designs.length-1;persist();renderGarage();toast("Design imported: "+(nd.name||"Imported car"));}
 ["bodySel","paintCol","paint2Col","finishSel","stripeChk","carNum","roofText","wheelSel","wheelCol","aeroSel","engineSel","tireSel","stanceSel","weightSel"].forEach(id=>{document.addEventListener("change",e=>{if(e.target.id===id){readGarageForm();renderGarage();}});});
 // ---------- Career ----------
 function renderCareer(){
@@ -393,19 +423,46 @@ function renderCareer(){
  const pts=save.career.points||[0,0,0,0,0,0,0,0];
  $("standings").innerHTML="<h2>Standings (you vs AI season totals)</h2><p>You: "+pts.reduce((a,b)=>a+b,0)+" pts · Championship round: "+((save.career.round%8)+1)+" of 8</p>";
 }
-// ---------- Multiplayer ----------
-let lobby={code:"",players:["You (host)"],ready:false};
-function renderLobby(){
- $("lobbyBox").innerHTML=`<div class="pane" style="margin-top:12px"><h2>Lobby ${lobby.code||"(no room yet)"}</h2><p>${lobby.players.map(p=>p+(lobby.ready?" — READY":"")).join("<br>")||"No players yet."}</p><p class="small">Host can kick a lagging player (demo lobby: remove a bot below). A disconnected player becomes a ghost AI so the race is not ruined.</p><div class="row"><button class="btn2" onclick="toggleReady()">Toggle ready-up</button><button class="btn2" onclick="kickBot()">Kick last bot player</button><button class="btn2" onclick="addBotPlayer()">Add bot player to lobby</button></div></div>`;
+// ---------- Multiplayer lobby (hub: pick, race, return) ----------
+// lobby.settings is the single source of truth for the next race.
+// Remote wiring point: when Firebase is configured, lobbyPick() should
+// write lobby.settings + lobby.players + ready state to the room in
+// Realtime Database, and remote clients should apply the room's settings
+// here instead of their local picks. No real Firebase key is in this file.
+let lobby={code:"",players:["You (host)"],ready:false,isHost:true,settings:{track:0,mode:"Quick Race",laps:3,totalCars:8,difficulty:"Pro"}};
+let lobbyRace=false;
+function lobbyPick(){
+ const s=lobby.settings;
+ s.track=+$("lobbyTrackSel").value; s.mode=$("lobbyModeSel").value; s.laps=+$("lobbyLapSel").value; s.totalCars=+$("lobbyCarsSel").value; s.difficulty=$("lobbyAiSel").value;
+ renderLobby();
 }
-function createRoom(){lobby.code="APEX-"+Math.floor(1000+Math.random()*9000);lobby.players=[($("playerName").value||"Racer 7")+" (host)"];renderLobby();$("roomCode").value=lobby.code;toast("Room created: "+lobby.code+". Share this code with friends. Online sync needs Firebase (see README) — offline race works now.");}
-function joinRoom(){const c=$("roomCode").value.trim(); if(!c){toast("Enter a room code first, e.g. APEX-1234.");return;} lobby.code=c.toUpperCase();lobby.players=[($("playerName").value||"Racer 7"),"Friend (offline demo)"];renderLobby();toast("Joined "+lobby.code+" in offline demo mode. Configure Firebase in README to race real friends online.");}
+function lobbySummary(){
+ const s=lobby.settings;
+ return `Next game: ${TRACKS[s.track]?TRACKS[s.track].name:"City Circuit"} · ${s.mode} · ${s.laps} laps · ${s.totalCars} cars · AI ${s.difficulty}`;
+}
+function renderLobby(){
+ const s=lobby.settings;
+ const hostNote=lobby.isHost?"You are the host — your picks are the room's picks.":"Guest — the host's picks are shown here. (Remote guest picks sync when Firebase is configured.)";
+ $("lobbyPickSummary").textContent=lobbySummary();
+ const picks=$("lobbyTrackSel"); if(picks) picks.disabled=!lobby.isHost;
+ ["lobbyModeSel","lobbyLapSel","lobbyCarsSel","lobbyAiSel"].forEach(id=>{const el=$(id); if(el) el.disabled=!lobby.isHost;});
+ $("lobbyBox").innerHTML=`<div class="pane" style="margin-top:12px"><h2>Lobby ${lobby.code||"(no room yet)"}</h2><p>${lobby.players.map(p=>p+(lobby.ready?" — READY":"")).join("<br>")||"No players yet."}</p><p class="small">${hostNote} Host can kick a lagging player (demo lobby: remove a bot below). A disconnected player becomes a ghost AI so the race is not ruined.</p><div class="row"><button class="btn2" onclick="toggleReady()">Toggle ready-up</button><button class="btn2" onclick="kickBot()">Kick last bot player</button><button class="btn2" onclick="addBotPlayer()">Add bot player to lobby</button></div></div>`;
+}
+function createRoom(){lobby.code="APEX-"+Math.floor(1000+Math.random()*9000);lobby.isHost=true;lobby.players=[($("playerName").value||"Racer 7")+" (host)"];lobby.ready=false;renderLobby();$("roomCode").value=lobby.code;toast("Room created: "+lobby.code+". Share this code with friends. Online sync needs Firebase (see README) — offline race works now.");}
+function joinRoom(){const c=$("roomCode").value.trim(); if(!c){toast("Enter a room code first, e.g. APEX-1234.");return;} lobby.code=c.toUpperCase();lobby.isHost=false;lobby.ready=false;lobby.players=[($("playerName").value||"Racer 7"),"Friend (offline demo)"];renderLobby();toast("Joined "+lobby.code+" in offline demo mode. Configure Firebase in README to race real friends online.");}
 function toggleReady(){lobby.ready=!lobby.ready;renderLobby();}
 function addBotPlayer(){if(lobby.players.length>=8){toast("Lobby is full (8 players).");return;} lobby.players.push(AI_NAMES[lobby.players.length%AI_NAMES.length]+" (bot)");renderLobby();}
 function kickBot(){if(lobby.players.length<=1){toast("No bot player to kick.");return;} lobby.players.pop();renderLobby();toast("Player kicked. They would become a ghost AI in a live race.");}
 function sendChat(p){$("chatLog").innerHTML+=`<div>${$("playerName").value||"Racer"}: ${p} — <i>subtitle: ${p}</i></div>`;showMsg(p);}
-function startMultiRace(){mode="Multiplayer";showScreen("setup");$("setupTitle").textContent="Multiplayer race (offline fallback vs AI)";}
+function applyLobbySettings(){
+ const s=lobby.settings;
+ $("trackSel").value=s.track; $("lapSel").value=s.laps; $("aiSel").value=s.difficulty;
+ $("oppSel").value=s.totalCars===2?1:s.totalCars===4?3:7;
+}
+function startMultiRace(){mode=lobby.settings.mode==="Drift Mode"?"Drift":lobby.settings.mode==="Elimination"?"Elimination":"Multiplayer";lobbyRace=true;applyLobbySettings();try{startRace();}catch(e){lobbyRace=false;showScreen("multi");toast("That lobby race failed to load — pick another track and try again. ("+e.message+")");}}
 function startSplit(){mode="Split 2P";showScreen("setup");$("setupTitle").textContent="Local 2-player — WASD vs Arrow keys";}
+function startSplitFromLobby(){mode="Split 2P";lobbyRace=true;applyLobbySettings();try{startRace();}catch(e){lobbyRace=false;showScreen("multi");toast("That lobby race failed to load — pick another track and try again. ("+e.message+")");}}
+function returnToLobby(){cancelAnimationFrame(raceRAF);race=null;paused=false;hideOverlay();$("raceWrap").classList.remove("on");lobby.ready=false;showScreen("multi");toast("Back in the lobby — pick the next game.");}
 // ---------- Sound (Web Audio only, starts after user tap) ----------
 let AC=null,master=null,engineOsc=null,engineGain=null,muted=false;
 function ensureAudio(){if(AC) return; try{AC=new (window.AudioContext||window.webkitAudioContext)();master=AC.createGain();master.gain.value=(save.settings.snd/100)*0.5;master.connect(AC.destination);engineOsc=AC.createOscillator();engineOsc.type="sawtooth";engineGain=AC.createGain();engineGain.gain.value=0;engineOsc.connect(engineGain);engineGain.connect(master);engineOsc.start();}catch(e){}}
@@ -449,7 +506,7 @@ let race=null,paused=false,raceRAF=0,keys={},touchState={},ghostRec=[],ghostPlay
 let msgTimer=null;
 function showMsg(m){const el=$("msg");el.textContent=m;el.style.display="block";if(save.settings.subs)el.setAttribute("aria-live","polite");clearTimeout(msgTimer);msgTimer=setTimeout(()=>el.style.display="none",3000);}
 function hideOverlay(){$("overlay").classList.remove("on");}
-function showPause(){$("overlay").classList.add("on");$("overlayPanel").innerHTML=`<h2>Paused</h2><p>Race paused. You are never trapped in a race.</p><div class="row" style="justify-content:center"><button class="btnCyan" onclick="togglePause()">Resume</button><button class="btn2" onclick="restartRace()">Restart race</button><button class="btn2" onclick="quitRace()">Quit to menu</button></div>`;}
+function showPause(){$("overlay").classList.add("on");$("overlayPanel").innerHTML=`<h2>Paused</h2><p>Race paused. You are never trapped in a race.</p><div class="row" style="justify-content:center"><button class="btnCyan" onclick="togglePause()">Resume</button><button class="btn2" onclick="restartRace()">Restart race</button><button class="btn2" onclick="quitRace()">Quit race</button></div>`;}
 function distToTrack(x,y,pts){let best=1e9,bi=0;for(let i=0;i<pts.length;i+=2){const dx=x-pts[i].x,dy=y-pts[i].y,d=dx*dx+dy*dy;if(d<best){best=d;bi=i;}}return {d:Math.sqrt(best),i:bi};}
 function makeCar(design,isPlayer,idx,name){
  const s=calcStats(design);
@@ -473,7 +530,7 @@ function startRace(){
  let n=3;showMsg("3");const iv=setInterval(()=>{n--;if(n>0){showMsg(String(n));beep(440,.2);}else{clearInterval(iv);race.go=true;race.lapStart=performance.now();showMsg("GO!");beep(880,.4);}},800);
  raceRAF=requestAnimationFrame(loop);
 }
-function quitRace(){cancelAnimationFrame(raceRAF);race=null;paused=false;hideOverlay();$("raceWrap").classList.remove("on");showScreen("menu");}
+function quitRace(){cancelAnimationFrame(raceRAF);race=null;paused=false;hideOverlay();$("raceWrap").classList.remove("on");if(lobbyRace){lobby.ready=false;showScreen("multi");} else showScreen("menu");}
 function restartRace(){cancelAnimationFrame(raceRAF);startRace();}
 function finishRace(){
  cancelAnimationFrame(raceRAF);
@@ -486,7 +543,7 @@ function finishRace(){
  if(mode==="Career"){save.career.points[race.ti]=(save.career.points[race.ti]||0)+(pos===1?25:pos===2?18:pos===3?15:pos===4?12:pos===5?10:pos===6?8:pos===7?6:4);save.career.round++;}
  persist();
  $("overlay").classList.add("on");
- $("overlayPanel").innerHTML=`<h2>🏁 Race finished — P${pos} / ${race.cars.length}</h2><p>Best lap: ${race.best?fmt(race.best):"—"} · Drift score: ${Math.round(race.driftTotal)} · Credits earned: <b style="color:var(--amber)">${creditsEarned}</b> · Total credits: ${save.credits}</p><p style="text-align:left">${sorted.map((c,i)=>`P${i+1} ${c.name} ${c===me?"(you)":""} — Lap ${c.lap}/${race.laps}`).join("<br>")}</p><div class="row" style="justify-content:center"><button class="btnCyan" onclick="hideOverlay();quitRace()">Back to menu</button><button class="btn2" onclick="restartRace()">Race again</button><button class="btn2" onclick="showScreen('garage');hideOverlay();$('raceWrap').classList.remove('on')">Garage</button></div>`;
+ $("overlayPanel").innerHTML=`<h2>🏁 Race finished — P${pos} / ${race.cars.length}</h2><p>Best lap: ${race.best?fmt(race.best):"—"} · Drift score: ${Math.round(race.driftTotal)} · Credits earned: <b style="color:var(--amber)">${creditsEarned}</b> · Total credits: ${save.credits}</p><p style="text-align:left">${sorted.map((c,i)=>`P${i+1} ${c.name} ${c===me?"(you)":""} — Lap ${c.lap}/${race.laps}`).join("<br>")}</p><div class="row" style="justify-content:center">${lobbyRace?`<button class="btnCyan" onclick="returnToLobby()">↩ Return to lobby — pick the next game</button>`:`<button class="btnCyan" onclick="hideOverlay();quitRace()">Back to menu</button>`}<button class="btn2" onclick="restartRace()">Race again</button><button class="btn2" onclick="showScreen('garage');hideOverlay();$('raceWrap').classList.remove('on')">Garage</button></div>`;
 }
 function fmt(ms){const s=ms/1000;return Math.floor(s/60)+":"+ (s%60).toFixed(1).padStart(4,"0");}
 function update(dt){
@@ -550,7 +607,7 @@ function update(dt){
  // engine sound pitch with speed
  if(AC&&engineOsc&&!muted){engineGain.gain.value=0.03+Math.abs(race.cars[0].speed)/400*0.06;engineOsc.frequency.value=60+Math.abs(race.cars[0].speed)*0.9;}
  // elimination check: if player eliminated, end
- if(race.cars[0].eliminated){cancelAnimationFrame(raceRAF);$("overlay").classList.add("on");$("overlayPanel").innerHTML=`<h2>Eliminated</h2><p>You finished last on a lap. Try again — a cleaner line beats a faster crash.</p><div class="row" style="justify-content:center"><button class="btnCyan" onclick="restartRace()">Race again</button><button class="btn2" onclick="quitRace()">Back to menu</button></div>`;return;}
+ if(race.cars[0].eliminated){cancelAnimationFrame(raceRAF);$("overlay").classList.add("on");$("overlayPanel").innerHTML=`<h2>Eliminated</h2><p>You finished last on a lap. Try again — a cleaner line beats a faster crash.</p><div class="row" style="justify-content:center"><button class="btnCyan" onclick="restartRace()">Race again</button>${lobbyRace?`<button class="btn2" onclick="returnToLobby()">↩ Return to lobby</button>`:`<button class="btn2" onclick="quitRace()">Back to menu</button>`}</div>`;return;}
 }
 let particles=[];
 function spawnParticle(x,y){if(particles.length>80)return;particles.push({x,y,life:0.5});}
