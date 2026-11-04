@@ -64,8 +64,11 @@ input[type=range]{padding:0}
 #hudTR{top:66px;right:12px;text-align:right}
 #hudBR{bottom:calc(28% + 12px);right:12px;text-align:right}
 #hudBL{bottom:calc(28% + 12px);left:12px}
-#speed{font-size:min(calc(64px*var(--scale)),18vw);font-weight:800;line-height:1}
-.hud{max-width:46vw}.hud div{overflow-wrap:anywhere}
+#speed{font-size:min(calc(64px*var(--scale)),14vw);font-weight:800;line-height:1}
+.hud{max-width:46vw;box-sizing:border-box;overflow:hidden}.hud div{overflow-wrap:anywhere;max-width:100%}
+#hudBR{right:12px;max-width:min(46vw,360px)}
+#hudBR .nitrobar{width:min(160px,30vw)}
+body.cb .poscol{outline:2px solid #fff;outline-offset:1px}body.cb .scrim{border-color:#fff}
 #hudTL div,#hudBR div{font-size:calc(16px*var(--scale))}
 #msg{top:66px;left:50%;transform:translateX(-50%);white-space:nowrap;max-width:90vw;overflow:hidden;text-overflow:ellipsis}
 @media(max-width:720px){#speed{font-size:48px}#hudTR canvas{width:104px;height:72px}}
@@ -113,6 +116,7 @@ body.highcontrast .scrim{background:#000}body.highcontrast{--muted:#fff}
 <div id="trackInfo" class="small"></div>
 <label>Opponents</label><select id="oppSel"><option value="3">3 opponents (4 cars)</option><option value="7" selected>7 opponents (8 cars)</option><option value="1">1 opponent</option></select>
 <label>AI difficulty</label><select id="aiSel"><option>Rookie</option><option selected>Pro</option><option>Elite</option></select>
+<p class="small">AI personalities in every race: drivers mix aggressive, defensive, and clean styles — difficulty sets their speed, personality sets how they race you.</p>
 <label>Laps</label><select id="lapSel"><option>3</option><option>1</option><option>5</option></select>
 <div class="row" style="margin-top:16px"><button class="btnCyan" id="goRaceBtn">🏁 Start race</button><button class="btn2" onclick="showScreen('menu')">Back to menu</button></div>
 <p class="small">Time Trial uses the same track list and records a ghost of your best lap. Drift scores angle + duration + combos. Elimination removes last place each lap.</p>
@@ -191,7 +195,7 @@ body.highcontrast .scrim{background:#000}body.highcontrast{--muted:#fff}
 <h2>Preset chat only (no free-text chat with strangers)</h2>
 <div class="row" id="chatBtns"></div><div id="chatLog" class="small"></div>
 <div class="row"><button class="btn" onclick="startMultiRace()">🏁 Start lobby race</button><button class="btn2" onclick="startSplitFromLobby()">👥 Local 2-player from lobby: WASD + Arrows</button><button class="btn2" onclick="showScreen('menu')">Back</button></div>
-<p class="small">Ping: <span id="pingVal">— offline mode</span> · Sync: 20 Hz target when Firebase is configured, interpolated so cars glide, not teleport. Disconnects become ghost AI. After the race, use Return to lobby to pick the next game.</p>
+<p class="small">Ping: <span id="pingVal">— offline mode</span> · Sync: 20 Hz target when Firebase is configured, interpolated so cars glide, not teleport. Disconnects become ghost AI. After the race, quit with ✕, or use the Return to lobby button on the finish screen, to pick the next game. Lobbies are saved in this browser — reopening Multiplayer rejoins your last room if it still exists.</p>
 </section>
 
 <!-- SETTINGS -->
@@ -204,6 +208,7 @@ body.highcontrast .scrim{background:#000}body.highcontrast{--muted:#fff}
 <label>Units</label><select id="unitSel"><option>mph</option><option>km/h</option></select>
 <label>Language</label><select id="langSel"><option>English</option><option>Español (labels in English in this build)</option></select>
 <label><input type="checkbox" id="hcChk" style="width:auto"> High-contrast / projector mode (pure black scrims, 125% minimum text, no background animation behind HUD)</label>
+<label><input type="checkbox" id="cbChk" style="width:auto"> Colour-blind mode (Okabe-Ito position colours + position numbers + white outlines on position pills, on top of high-contrast if enabled)</label>
 <label><input type="checkbox" id="rmChk" style="width:auto"> Reduced motion (no screen shake, fewer particles)</label>
 <label><input type="checkbox" id="subChk" checked style="width:auto"> Subtitles for race announcements</label>
 <h2>Remap controls</h2>
@@ -228,7 +233,7 @@ body.highcontrast .scrim{background:#000}body.highcontrast{--muted:#fff}
 <canvas id="raceCanvas" width="900" height="600"></canvas>
 <div class="hud scrim" id="hudTL"><span id="posPill" class="poscol">P1 / 8</span><div id="lapLine" style="font-size:18px">Lap 1/3</div><div id="lapTime" style="font-size:18px;color:var(--muted)">Lap 0:00.0 · Best —</div></div>
 <div class="hud scrim" id="hudTR"><canvas id="mini" width="168" height="112"></canvas><div class="small" style="cursor:pointer" onclick="toggleMini()">Tap minimap to hide / show</div></div>
-<div class="hud scrim" id="hudBR"><div id="speed">0</div><div><span id="gearPill" class="poscol" style="background:var(--cyan);color:#04121a">GEAR 1</span> <span id="unitLbl">mph</span></div><div style="margin-top:6px">⚡ NITRO <span id="nitroPct">100%</span><div style="width:160px;height:14px;background:#0B0E14;border:1px solid var(--border);border-radius:999px;overflow:hidden"><div id="nitroBar" style="height:100%;width:100%;background:var(--cyan)"></div></div></div></div>
+<div class="hud scrim" id="hudBR"><div id="speed">0</div><div><span id="gearPill" class="poscol" style="background:var(--cyan);color:#04121a">GEAR 1</span> <span id="unitLbl">mph</span></div><div style="margin-top:6px">⚡ NITRO <span id="nitroPct">100%</span><div class="nitrobar" style="height:14px;background:#0B0E14;border:1px solid var(--border);border-radius:999px;overflow:hidden"><div id="nitroBar" style="height:100%;width:100%;background:var(--cyan)"></div></div></div></div>
 <div class="hud scrim" id="hudBL" style="display:none">🧩 DAMAGE <span id="dmgPct">0%</span><div style="width:160px;height:14px;background:#0B0E14;border:1px solid var(--border);border-radius:999px;overflow:hidden"><div id="dmgBar" style="height:100%;width:0%;background:var(--amber)"></div></div><div id="dmgLabel"></div></div>
 <div class="hud scrim" id="msg" style="display:none"></div>
 <div id="touch"><div class="tcol"><button class="tbtn" data-t="left">◀</button><button class="tbtn" data-t="right">▶</button></div><div class="tcol"><button class="tbtn small" data-t="gas">GAS</button><button class="tbtn small" data-t="brake">BRK</button><button class="tbtn nitro" data-t="nitro">⚡</button></div></div>
@@ -263,7 +268,7 @@ const TRACKS=[
  {id:"endurance",name:"Endurance Loop",surf:"endurance",weather:"Changing",grip:0.97,bg:"#3F5A3A",decor:"mixed",desc:"Long mixed loop. Grip changes section by section."}];
 const AI_NAMES=["Rookie Ray","Pro Pia","Elite Eli","Aggro Ana","Def Dan","Clean Cleo","Turbo Tom","Steady Sam"];
 const AI_PERS=["clean","aggressive","defensive","clean","aggressive","defensive","aggressive","clean"];
-let save={credits:1000,xp:0,level:1,designs:[],current:0,best:{},ghost:{},career:{round:0,points:[0,0,0,0,0,0,0,0],standings:{}},settings:{snd:70,mus:40,gfx:"Medium",text:1,unit:"mph",hc:false,rm:false,subs:true,keys:{up:"w",down:"s",left:"a",right:"d",nitro:" "}}};
+let save={credits:1000,xp:0,level:1,designs:[],current:0,best:{},ghost:{},career:{round:0,points:[0,0,0,0,0,0,0,0],standings:{}},settings:{snd:70,mus:40,gfx:"Medium",text:1,unit:"mph",hc:false,cb:false,rm:false,subs:true,keys:{up:"w",down:"s",left:"a",right:"d",nitro:" "}}};
 try{const s=JSON.parse(localStorage.getItem("apexGarageSaveV1")||"null"); if(s) save=Object.assign(save,s);}catch(e){}
 function persist(){try{localStorage.setItem("apexGarageSaveV1",JSON.stringify(save));}catch(e){}}
 function toast(m){const t=$("toast");t.textContent=m;t.style.display="block";setTimeout(()=>t.style.display="none",2600);}
@@ -389,9 +394,9 @@ function photoMode(){
  const a=document.createElement("a");a.download="apex-garage-car.png";a.href=cv.toDataURL("image/png");a.click();toast("Photo downloaded — car centred at 80% of showroom width.");
 }
 function saveDesign(){const d=readGarageForm(); if(d.text.length>12){toast("Roof text must be 12 characters or fewer.");return;}
- const body=BODIES.find(b=>b.id===d.body); const owned=save.designs.some(x=>x.body===d.body);
- if(body.price>0 && !owned && save.credits<body.price){toast("Not enough credits for "+body.name+" ("+body.price+"). Race Career to earn credits.");return;}
- if(body.price>0 && !owned) save.credits-=body.price;
+ const body=BODIES.find(b=>b.id===d.body); save.ownedBodies=save.ownedBodies||[]; const owned=save.ownedBodies.includes(d.body);
+ if(body.price>0 && !owned && save.credits<body.price){toast("Not enough credits for "+body.name+" ("+body.price+" credits, you have "+save.credits+"). Race Career to earn credits — design NOT saved.");return;}
+ if(body.price>0 && !owned){save.credits-=body.price;save.ownedBodies.push(d.body);toast(body.name+" unlocked for "+body.price+" credits. Credits left: "+save.credits+".");}
  if(save.designs.length>=20 && !save.designs.includes(d)) save.designs.shift();
  save.designs[save.current]=d; persist(); renderGarage(); toast("Design saved. Share code is ready to copy.");}
 function loadDesign(i){save.current=i;persist();renderGarage();}
@@ -447,7 +452,7 @@ function renderLobby(){
  $("lobbyPickSummary").textContent=lobbySummary();
  const picks=$("lobbyTrackSel"); if(picks) picks.disabled=!lobby.isHost;
  ["lobbyModeSel","lobbyLapSel","lobbyCarsSel","lobbyAiSel"].forEach(id=>{const el=$(id); if(el) el.disabled=!lobby.isHost;});
- $("lobbyBox").innerHTML=`<div class="pane" style="margin-top:12px"><h2>Lobby ${lobby.code||"(no room yet)"}</h2><p>${lobby.players.map(p=>p+(lobby.ready?" — READY":"")).join("<br>")||"No players yet."}</p><p class="small">${hostNote} Host can kick a lagging player (demo lobby: remove a bot below). A disconnected player becomes a ghost AI so the race is not ruined.</p><div class="row"><button class="btn2" onclick="toggleReady()">Toggle ready-up</button><button class="btn2" onclick="kickBot()">Kick last bot player</button><button class="btn2" onclick="addBotPlayer()">Add bot player to lobby</button></div></div>`;
+ $("lobbyBox").innerHTML=`<div class="pane" style="margin-top:12px"><h2>Lobby ${lobby.code||"(no room yet)"}</h2><p>${lobby.players.join("<br>")||"No players yet."}</p><p>Your ready state: <b>${lobby.ready?"READY":"Not ready"}</b></p><p class="small">${hostNote} Host can kick a lagging player (demo lobby: remove a bot below). A disconnected player becomes a ghost AI so the race is not ruined.</p><div class="row"><button class="btn2" onclick="toggleReady()">Toggle ready-up</button><button class="btn2" onclick="kickBot()">Kick last bot player</button><button class="btn2" onclick="addBotPlayer()">Add bot player to lobby</button></div></div>`;
 }
 // ---------- Firebase remote (web client config; this key is a public web identifier, not a private secret) ----------
 const FIREBASE_CONFIG={apiKey:"AIzaSyAZGpSJegi1_xxZa7QpeYZl4RIT1_iUC2Q",authDomain:"apex-garage-racing-2026.firebaseapp.com",databaseURL:"https://apex-garage-racing-2026-default-rtdb.firebaseio.com",projectId:"apex-garage-racing-2026",storageBucket:"apex-garage-racing-2026.firebasestorage.app",messagingSenderId:"611035621925",appId:"1:611035621925:web:04e5f6d60e721269946dcc"};
@@ -460,6 +465,7 @@ async function fbInit(){
   if(!firebase.apps.length) firebase.initializeApp(FIREBASE_CONFIG);
   const cred=await firebase.auth().signInAnonymously(); fbUid=cred.user.uid; fbReady=true;
   const st=$("fbStatus"); if(st){st.textContent="Firebase connected — remote rooms work.";st.style.color="var(--cyan)";}
+  try{const saved=localStorage.getItem("apexLobbyCode"); if(saved&&!lobby.code){lobby.code=saved;$("roomCode").value=saved; const snap=await firebase.database().ref(fbRoomPath()).get().catch(()=>null); if(snap&&snap.exists()){lobby.isHost=(snap.val().host===fbUid); await firebase.database().ref(fbRoomPath()+"/players/"+fbUid).set({name:($("playerName").value||"Racer 7"),ready:false}).catch(()=>{}); fbListenRoom(); toast("Rejoined your last lobby: "+saved+".");} else {localStorage.removeItem("apexLobbyCode");}}}catch(e){}
   const pv=$("pingVal"); if(pv) pv.textContent="online — anonymous";
   const rp=$("racePing"); if(rp) rp.textContent="online";
  }catch(e){fbReady=false;const st=$("fbStatus"); if(st) st.textContent="Firebase unavailable — lobby works locally / offline vs AI.";}
@@ -490,10 +496,10 @@ function fbPushPosition(){
  firebase.database().ref(fbRoomPath()+"/positions/"+fbUid).set({x:Math.round(me.x),y:Math.round(me.y),a:me.ang,s:Math.round(me.speed),lap:me.lap,prog:Math.round(me.prog),finished:!!me.finished}).catch(()=>{});
 }
 function fbLeavePosition(){if(!fbReady||!lobby.code||!fbUid) return; firebase.database().ref(fbRoomPath()+"/positions/"+fbUid).remove().catch(()=>{});}
-function createRoom(){lobby.code="APEX-"+Math.floor(1000+Math.random()*9000);lobby.isHost=true;lobby.players=[($("playerName").value||"Racer 7")+" (host)"];lobby.ready=false;renderLobby();$("roomCode").value=lobby.code;
+function createRoom(){lobby.code="APEX-"+Math.floor(1000+Math.random()*9000);lobby.isHost=true;lobby.players=[($("playerName").value||"Racer 7")+" (host)"];lobby.ready=false;try{localStorage.setItem("apexLobbyCode",lobby.code);}catch(e){} renderLobby();$("roomCode").value=lobby.code;
  if(fbReady){firebase.database().ref(fbRoomPath()).set({host:fbUid,settings:lobby.settings,players:{[fbUid]:{name:($("playerName").value||"Racer 7"),ready:false}},state:"lobby"}).then(()=>{fbListenRoom();toast("Room created: "+lobby.code+". Share this code — remote players can join now.");}).catch(()=>toast("Room created locally — Firebase write failed, offline race works now."));}
  else toast("Room created: "+lobby.code+". Share this code with friends. Firebase is connecting — offline race works now.");}
-async function joinRoom(){const c=$("roomCode").value.trim(); if(!c){toast("Enter a room code first, e.g. APEX-1234.");return;} lobby.code=c.toUpperCase();lobby.isHost=false;lobby.ready=false;
+async function joinRoom(){const c=$("roomCode").value.trim(); if(!c){toast("Enter a room code first, e.g. APEX-1234.");return;} lobby.code=c.toUpperCase();lobby.isHost=false;lobby.ready=false;try{localStorage.setItem("apexLobbyCode",lobby.code);}catch(e){}
  if(fbReady){const snap=await firebase.database().ref(fbRoomPath()).get().catch(()=>null); if(!snap||!snap.exists()){toast("Room not found — check the code, or create a room.");return;} await firebase.database().ref(fbRoomPath()+"/players/"+fbUid).set({name:($("playerName").value||"Racer 7"),ready:false}).catch(()=>{}); fbListenRoom(); toast("Joined "+lobby.code+" remotely. Wait for the host to start.");}
  else {lobby.players=[($("playerName").value||"Racer 7"),"Friend (offline demo)"];renderLobby();toast("Joined "+lobby.code+" in offline demo mode. Firebase is connecting.");}}
 function toggleReady(){if(fbReady&&lobby.code&&fbUid){lobby.ready=!lobby.ready;firebase.database().ref(fbRoomPath()+"/players/"+fbUid+"/ready").set(lobby.ready).catch(()=>{});renderLobby();} else {lobby.ready=!lobby.ready;renderLobby();}}
@@ -508,7 +514,8 @@ function applyLobbySettings(){
 function startMultiRace(){if(fbReady&&lobby.code&&!lobby.isHost){toast("Only the host can start a remote race — wait for the host.");return;} mode=lobby.settings.mode==="Drift Mode"?"Drift":lobby.settings.mode==="Elimination"?"Elimination":"Multiplayer";lobbyRace=true;applyLobbySettings();if(fbReady&&lobby.code){firebase.database().ref(fbRoomPath()+"/state").set("racing").catch(()=>{});} try{startRace();}catch(e){lobbyRace=false;showScreen("multi");toast("That lobby race failed to load — pick another track and try again. ("+e.message+")");}}
 function startSplit(){mode="Split 2P";showScreen("setup");$("setupTitle").textContent="Local 2-player — WASD vs Arrow keys";}
 function startSplitFromLobby(){mode="Split 2P";lobbyRace=true;applyLobbySettings();try{startRace();}catch(e){lobbyRace=false;showScreen("multi");toast("That lobby race failed to load — pick another track and try again. ("+e.message+")");}}
-function returnToLobby(){cancelAnimationFrame(raceRAF);race=null;paused=false;hideOverlay();$("raceWrap").classList.remove("on");lobby.ready=false;fbLeavePosition();if(fbReady&&lobby.isHost&&lobby.code){firebase.database().ref(fbRoomPath()+"/state").set("lobby").catch(()=>{});} showScreen("multi");toast("Back in the lobby — pick the next game.");}
+function fbSetReady(v){if(fbReady&&lobby.code&&fbUid){firebase.database().ref(fbRoomPath()+"/players/"+fbUid+"/ready").set(v).catch(()=>{});}}
+function returnToLobby(){cancelAnimationFrame(raceRAF);race=null;paused=false;hideOverlay();$("raceWrap").classList.remove("on");document.querySelectorAll(".screen").forEach(el=>el.removeAttribute("aria-hidden"));lobby.ready=false;fbSetReady(false);fbLeavePosition();if(fbReady&&lobby.isHost&&lobby.code){firebase.database().ref(fbRoomPath()+"/state").set("lobby").catch(()=>{});} showScreen("multi");toast("Back in the lobby — ready reset, pick the next game.");}
 // ---------- Sound (Web Audio only, starts after user tap) ----------
 let AC=null,master=null,engineOsc=null,engineGain=null,muted=false;
 function ensureAudio(){if(AC) return; try{AC=new (window.AudioContext||window.webkitAudioContext)();master=AC.createGain();master.gain.value=(save.settings.snd/100)*0.5;master.connect(AC.destination);engineOsc=AC.createOscillator();engineOsc.type="sawtooth";engineGain=AC.createGain();engineGain.gain.value=0;engineOsc.connect(engineGain);engineGain.connect(master);engineOsc.start();}catch(e){}}
@@ -521,8 +528,9 @@ $("muteBtn").onclick=toggleMute;
 function applySettings(){
  save.settings.snd=+$("volSnd").value;save.settings.mus=+$("volMus").value;save.settings.gfx=$("gfxSel").value;save.settings.text=+$("textSel").value;save.settings.unit=$("unitSel").value;save.settings.hc=$("hcChk").checked;save.settings.rm=$("rmChk").checked;save.settings.subs=$("subChk").checked;
  save.settings.keys={up:$("keyUp").value.toLowerCase()||"w",down:$("keyDown").value.toLowerCase()||"s",left:$("keyLeft").value.toLowerCase()||"a",right:$("keyRight").value.toLowerCase()||"d",nitro:$("keyNitro").value||" "};
+ save.settings.cb=$("cbChk").checked;
  document.documentElement.style.setProperty("--scale",save.settings.text);
- document.body.classList.toggle("highcontrast",save.settings.hc);document.body.classList.toggle("projector",save.settings.hc);
+ document.body.classList.toggle("highcontrast",save.settings.hc);document.body.classList.toggle("projector",save.settings.hc);document.body.classList.toggle("cb",save.settings.cb);
  persist();toast("Settings saved.");showScreen("menu");
 }
 let resetArmed=0;
@@ -552,7 +560,7 @@ let race=null,paused=false,raceRAF=0,keys={},touchState={},ghostRec=[],ghostPlay
 let msgTimer=null;
 function showMsg(m){const el=$("msg");el.textContent=m;el.style.display="block";if(save.settings.subs)el.setAttribute("aria-live","polite");clearTimeout(msgTimer);msgTimer=setTimeout(()=>el.style.display="none",3000);}
 function hideOverlay(){$("overlay").classList.remove("on");}
-function showPause(){$("overlay").classList.add("on");$("overlayPanel").innerHTML=`<h2>Paused</h2><p>Race paused. You are never trapped in a race.</p><div class="row" style="justify-content:center"><button class="btnCyan" onclick="togglePause()">Resume</button><button class="btn2" onclick="restartRace()">Restart race</button><button class="btn2" onclick="quitRace()">Quit race</button></div>`;}
+function showPause(){$("overlay").classList.add("on");$("overlayPanel").innerHTML=`<h2>Paused</h2><p>Race paused. You are never trapped in a race.</p><div class="row" style="justify-content:center"><button class="btnCyan" onclick="togglePause()">Resume</button><button class="btn2" onclick="restartRace()">Restart race</button>${lobbyRace?`<button class="btn2" onclick="returnToLobby()">↩ Return to lobby</button>`:`<button class="btn2" onclick="quitRace()">Quit race</button>`}</div>`;}
 function distToTrack(x,y,pts){let best=1e9,bi=0;for(let i=0;i<pts.length;i+=2){const dx=x-pts[i].x,dy=y-pts[i].y,d=dx*dx+dy*dy;if(d<best){best=d;bi=i;}}return {d:Math.sqrt(best),i:bi};}
 function makeCar(design,isPlayer,idx,name){
  const s=calcStats(design);
@@ -570,6 +578,7 @@ function startRace(){
  // grid: staggered behind start
  cars.forEach((c,i)=>{const p=pts[(pts.length-(i%4)*18+pts.length)%pts.length];const side=(i%2?1:-1);c.x=p.x+side*28;c.y=p.y+Math.floor(i/2)*55;c.ang=-Math.PI/2;c.lastIdx=pts.length-20;});
  race={track,pts,ti,cars,laps,mode,start:performance.now(),count:3,go:false,raceTime:0,lapStart:performance.now(),best:null,driftTotal:0,msgShown:false,weather:track.weather};
+ document.querySelectorAll(".screen").forEach(el=>el.setAttribute("aria-hidden","true"));
  $("raceWrap").classList.add("on");$("raceWrap").classList.toggle("touch",("ontouchstart" in window)||navigator.maxTouchPoints>0);
  $("raceTitle").textContent=track.name+" · "+mode+" · "+track.weather;
  paused=false;hideOverlay();showMsg("Get ready — "+track.name);
@@ -577,8 +586,8 @@ function startRace(){
  let n=3;showMsg("3");const iv=setInterval(()=>{n--;if(n>0){showMsg(String(n));beep(440,.2);}else{clearInterval(iv);race.go=true;race.lapStart=performance.now();showMsg("GO!");beep(880,.4);}},800);
  raceRAF=requestAnimationFrame(loop);
 }
-function quitRace(){cancelAnimationFrame(raceRAF);race=null;paused=false;hideOverlay();$("raceWrap").classList.remove("on");fbLeavePosition();if(lobbyRace){lobby.ready=false;showScreen("multi");} else showScreen("menu");}
-function restartRace(){cancelAnimationFrame(raceRAF);startRace();}
+function quitRace(){cancelAnimationFrame(raceRAF);race=null;paused=false;hideOverlay();$("raceWrap").classList.remove("on");document.querySelectorAll(".screen").forEach(el=>el.removeAttribute("aria-hidden"));fbLeavePosition();if(lobbyRace){lobby.ready=false;fbSetReady(false);showScreen("multi");toast("Back in the lobby — ready reset.");} else showScreen("menu");}
+function restartRace(){cancelAnimationFrame(raceRAF);toast("Restart re-grids the race — everyone back to the start grid, positions reset.");startRace();}
 function finishRace(){
  cancelAnimationFrame(raceRAF);
  const sorted=[...race.cars].sort((a,b)=>(b.lap*10000+b.prog)-(a.lap*10000+a.prog));
@@ -719,7 +728,7 @@ document.addEventListener("keydown",e=>{
  if(["arrowup","arrowdown","arrowleft","arrowright"," "].includes(k)) e.preventDefault();
  keys[k]=true;
  if(k==="p"&&race)togglePause();
- if(k==="r"&&race&&!paused){const me=race.cars[0];const p=race.pts[me.lastIdx];me.x=p.x;me.y=p.y;me.speed=0;showMsg("Reset to track");}
+ if(k==="r"&&race&&!paused){const me=race.cars[0];const p=race.pts[me.lastIdx];me.x=p.x;me.y=p.y;me.speed=0;showMsg("Reset: car re-centred — lap time keeps running.");}
 });
 document.addEventListener("keyup",e=>{keys[e.key.toLowerCase()]=false;});
 document.querySelectorAll(".tbtn").forEach(b=>{
@@ -738,7 +747,7 @@ document.addEventListener("fullscreenchange",()=>{if(document.fullscreenElement)
 (function init(){
  document.documentElement.style.setProperty("--scale",save.settings.text||1);
  document.body.classList.toggle("highcontrast",!!save.settings.hc);document.body.classList.toggle("projector",!!save.settings.hc);
- $("volSnd").value=save.settings.snd;$("volMus").value=save.settings.mus;$("gfxSel").value=save.settings.gfx;$("textSel").value=String(save.settings.text);$("unitSel").value=save.settings.unit;$("hcChk").checked=save.settings.hc;$("rmChk").checked=save.settings.rm;$("subChk").checked=save.settings.subs;
+ $("volSnd").value=save.settings.snd;$("volMus").value=save.settings.mus;$("gfxSel").value=save.settings.gfx;$("textSel").value=String(save.settings.text);$("unitSel").value=save.settings.unit;$("hcChk").checked=save.settings.hc;$("cbChk").checked=!!save.settings.cb;document.body.classList.toggle("cb",!!save.settings.cb);$("rmChk").checked=save.settings.rm;$("subChk").checked=save.settings.subs;
  const kk=save.settings.keys||{};$("keyUp").value=kk.up||"w";$("keyDown").value=kk.down||"s";$("keyLeft").value=kk.left||"a";$("keyRight").value=kk.right||"d";$("keyNitro").value=kk.nitro||" ";
  buildMenu();updatePill();renderGarage();renderCareer();renderLobby();
  // remap: capture next key
