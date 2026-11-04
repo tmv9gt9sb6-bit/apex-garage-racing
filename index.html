@@ -64,10 +64,12 @@ input[type=range]{padding:0}
 #hudTR{top:66px;right:12px;text-align:right}
 #hudBR{bottom:calc(28% + 12px);right:12px;text-align:right}
 #hudBL{bottom:calc(28% + 12px);left:12px}
-#speed{font-size:min(calc(64px*var(--scale)),14vw);font-weight:800;line-height:1}
+#speed{font-size:min(calc(52px*var(--scale)),12vw);font-weight:800;line-height:1;white-space:nowrap}
 .hud{max-width:46vw;box-sizing:border-box;overflow:hidden}.hud div{overflow-wrap:anywhere;max-width:100%}
-#hudBR{right:12px;max-width:min(46vw,360px)}
-#hudBR .nitrobar{width:min(160px,30vw)}
+#raceWrap{overflow:hidden}
+#hudBR{right:12px;left:auto;max-width:min(320px,calc(100vw - 24px));width:fit-content}
+#hudBR>div{white-space:normal}
+#hudBR .nitrobar{width:min(160px,calc(100vw - 80px))}
 body.cb .poscol{outline:2px solid #fff;outline-offset:1px}body.cb .scrim{border-color:#fff}
 #hudTL div,#hudBR div{font-size:calc(16px*var(--scale))}
 #msg{top:66px;left:50%;transform:translateX(-50%);white-space:nowrap;max-width:90vw;overflow:hidden;text-overflow:ellipsis}
@@ -273,6 +275,7 @@ try{const s=JSON.parse(localStorage.getItem("apexGarageSaveV1")||"null"); if(s) 
 function persist(){try{localStorage.setItem("apexGarageSaveV1",JSON.stringify(save));}catch(e){}}
 function toast(m){const t=$("toast");t.textContent=m;t.style.display="block";setTimeout(()=>t.style.display="none",2600);}
 function showScreen(name){
+ if(name!=="garage") previewDesign=null;
  document.querySelectorAll(".screen").forEach(s=>s.classList.remove("active"));
  const el=$("scr-"+name); if(el) el.classList.add("active");
  $("raceWrap").classList.remove("on");
@@ -283,7 +286,8 @@ function updatePill(){$("creditsPill").textContent=save.credits;$("levelPill").t
 // ---------- Design / stats ----------
 function defaultDesign(){return {name:"My Apex Car",body:"hatch",paint:"#00C8F0",paint2:"#0B0E14",finish:"metallic",stripes:true,number:"7",text:"APEX",decals:["★"],wheel:0,wheelColor:"#F5F7FA",aero:1,engine:0,tire:"street",stance:0,weight:0};}
 if(!save.designs.length) save.designs=[defaultDesign()];
-function curDesign(){return save.designs[save.current]||defaultDesign();}
+let previewDesign=null;
+function curDesign(){if(previewDesign) return previewDesign; return save.designs[save.current]||defaultDesign();}
 function calcStats(d){
  const b=BODIES.find(x=>x.id===d.body)||BODIES[0];
  let s={top:b.top,acc:b.acc,grip:b.grip,hand:b.hand,dur:b.dur};
@@ -393,15 +397,15 @@ function photoMode(){
  ctx.fillStyle=showNight?"#05070D":"#C7D2DE";ctx.fillRect(0,0,800,500);drawCar(ctx,400,250,showAng,d,6.15,true);
  const a=document.createElement("a");a.download="apex-garage-car.png";a.href=cv.toDataURL("image/png");a.click();toast("Photo downloaded — car centred at 80% of showroom width.");
 }
-function saveDesign(){const d=readGarageForm(); if(d.text.length>12){toast("Roof text must be 12 characters or fewer.");return;}
+function saveDesign(){const d=readGarageForm(); if(d.text.length>12){toast("Roof text must be 12 characters or fewer.");return false;}
  const body=BODIES.find(b=>b.id===d.body); save.ownedBodies=save.ownedBodies||[]; const owned=save.ownedBodies.includes(d.body);
- if(body.price>0 && !owned && save.credits<body.price){toast("Not enough credits for "+body.name+" ("+body.price+" credits, you have "+save.credits+"). Race Career to earn credits — design NOT saved.");return;}
+ if(body.price>0 && !owned && save.credits<body.price){toast("Not enough credits for "+body.name+" ("+body.price+" credits, you have "+save.credits+"). Race Career to earn credits — design NOT saved.");return false;}
  if(body.price>0 && !owned){save.credits-=body.price;save.ownedBodies.push(d.body);toast(body.name+" unlocked for "+body.price+" credits. Credits left: "+save.credits+".");}
  if(save.designs.length>=20 && !save.designs.includes(d)) save.designs.shift();
- save.designs[save.current]=d; persist(); renderGarage(); toast("Design saved. Share code is ready to copy.");}
-function loadDesign(i){save.current=i;persist();renderGarage();}
+ save.designs[save.current]=d; previewDesign=null; persist(); renderGarage(); toast("Design saved. Share code is ready to copy."); return true;}
+function loadDesign(i){previewDesign=null;save.current=i;persist();renderGarage();}
 function deleteDesign(i){if(save.designs.length<=1){toast("Keep at least one design.");return;} save.designs.splice(i,1);save.current=0;persist();renderGarage();}
-function useInRace(){saveDesign();showScreen("setup");toast("This car will be used in your next race.");}
+function useInRace(){if(!saveDesign()){toast("That car was not saved, so it will not be used in your next race.");return;} showScreen("setup");toast("This car will be used in your next race.");}
 function copyShare(){const el=$("shareOut");el.select();try{document.execCommand("copy");}catch(e){} toast("Share code copied.");}
 function normalizeDesign(d){
  // Share codes must never produce NaN stats or blank dropdowns, even if
@@ -420,7 +424,9 @@ function normalizeDesign(d){
  out.number=String(out.number||"7").slice(0,2); out.text=String(out.text||"").slice(0,12);
  return out;
 }
-function importShare(){const d=decodeShare($("shareIn").value); if(!d){toast("That share code did not decode. Check it and try again.");return;} const nd=normalizeDesign(d); save.designs.push(nd);save.current=save.designs.length-1;persist();renderGarage();toast("Design imported: "+(nd.name||"Imported car"));}
+function importShare(){const d=decodeShare($("shareIn").value); if(!d){toast("That share code did not decode. Check it and try again.");return;} const nd=normalizeDesign(d); const body=BODIES.find(b=>b.id===nd.body)||BODIES[0]; save.ownedBodies=save.ownedBodies||[];
+ if(body.price>0 && !save.ownedBodies.includes(nd.body) && save.credits<body.price){previewDesign=nd; renderGarage(); toast("Imported design preview only — NOT saved. Save costs "+body.price+" credits, you have "+save.credits+". It will not appear in Saved designs until you pay."); return;}
+ previewDesign=null; save.designs.push(nd);save.current=save.designs.length-1;persist();renderGarage();toast("Design imported: "+(nd.name||"Imported car"));}
 ["bodySel","paintCol","paint2Col","finishSel","stripeChk","carNum","roofText","wheelSel","wheelCol","aeroSel","engineSel","tireSel","stanceSel","weightSel"].forEach(id=>{document.addEventListener("change",e=>{if(e.target.id===id){readGarageForm();renderGarage();}});});
 // ---------- Career ----------
 function renderCareer(){
@@ -579,6 +585,8 @@ function startRace(){
  cars.forEach((c,i)=>{const p=pts[(pts.length-(i%4)*18+pts.length)%pts.length];const side=(i%2?1:-1);c.x=p.x+side*28;c.y=p.y+Math.floor(i/2)*55;c.ang=-Math.PI/2;c.lastIdx=pts.length-20;});
  race={track,pts,ti,cars,laps,mode,start:performance.now(),count:3,go:false,raceTime:0,lapStart:performance.now(),best:null,driftTotal:0,msgShown:false,weather:track.weather};
  document.querySelectorAll(".screen").forEach(el=>el.setAttribute("aria-hidden","true"));
+ if(document.activeElement&&document.activeElement.blur) document.activeElement.blur();
+ document.querySelectorAll(".screen").forEach(s=>s.classList.remove("active"));
  $("raceWrap").classList.add("on");$("raceWrap").classList.toggle("touch",("ontouchstart" in window)||navigator.maxTouchPoints>0);
  $("raceTitle").textContent=track.name+" · "+mode+" · "+track.weather;
  paused=false;hideOverlay();showMsg("Get ready — "+track.name);
