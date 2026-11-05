@@ -26,7 +26,7 @@ select,input{font:inherit;background:#0B0E14;color:var(--txt);border:1px solid v
 #touch{position:absolute;left:0;right:0;bottom:0;height:28%;z-index:6;display:none;pointer-events:none}
 #touch button{pointer-events:auto;position:absolute;width:76px;height:76px;border-radius:50%;background:rgba(21,27,40,.75);color:#fff;border:2px solid var(--border);font-weight:700}
 #touch .nitro{width:64px;height:64px;bottom:96px;right:20px}
-#pauseMenu{display:none;position:absolute;inset:0;z-index:8;background:rgba(0,0,0,.7);align-items:center;justify-content:center}#pauseMenu.on{display:flex}
+#pauseMenu{display:none;position:absolute;inset:0;z-index:8;background:rgba(0,0,0,.35);align-items:center;justify-content:center}#pauseMenu.on{display:flex}
 #count{position:absolute;inset:0;display:none;align-items:center;justify-content:center;font-size:96px;font-weight:800;z-index:7;text-shadow:0 0 30px #000}#count.on{display:flex}
 #splitP1{top:14px;left:50%;transform:translateX(-50%)}#splitP2{bottom:14px;left:50%;transform:translateX(-50%)}
 /* Split-screen: HUD elements share the screen with two viewports, so give them
@@ -106,7 +106,7 @@ select,input{font:inherit;background:#0B0E14;color:var(--txt);border:1px solid v
 <div class="hud" id="hudMsg"></div><div id="count"></div><div class="hud pill" id="splitP1" style="display:none">P1 — WASD · top</div><div class="hud pill" id="splitP2" style="display:none">P2 — Arrows · bottom</div>
 <div id="touch"><button style="left:16px;bottom:20px" data-k="left">◀</button><button style="left:104px;bottom:20px" data-k="right">▶</button><button style="right:104px;bottom:20px" data-k="down">▼</button><button style="right:16px;bottom:20px" data-k="up">▲</button><button class="nitro" data-k="nitro">NITRO</button></div>
 <div id="pauseMenu"><div class="panel" style="text-align:center"><h2>Paused</h2><div class="row" style="justify-content:center"><button class="btn" onclick="togglePause()">Resume</button><button class="btn2" onclick="restartRace()">↻ Restart</button><button class="btn2" onclick="quitRace()">Quit</button><button class="btn2" onclick="returnToLobbyBtn()">↩ Return to lobby</button></div><p class="small">Restart re-grids and resets positions. R re-centres your car — lap time keeps running.</p></div></div>
-<div id="finishMenu" style="display:none;position:absolute;inset:0;z-index:8;background:rgba(0,0,0,.75);align-items:center;justify-content:center"><div class="panel" style="text-align:center;max-width:560px"><h2 id="finishTitle">Race finished</h2><div id="finishBody"></div><div class="row" style="justify-content:center"><button class="btn" onclick="finishNext()">Continue</button><button class="btn2" onclick="quitRace()">Menu</button><button class="btn2" onclick="returnToLobbyBtn()">↩ Return to lobby</button></div></div></div>
+<div id="finishMenu" style="display:none;position:absolute;inset:0;z-index:8;background:rgba(0,0,0,.45);align-items:center;justify-content:center"><div class="panel" style="text-align:center;max-width:560px"><h2 id="finishTitle">Race finished</h2><div id="finishBody"></div><div class="row" style="justify-content:center"><button class="btn" onclick="finishNext()">Continue</button><button class="btn2" onclick="quitRace()">Menu</button><button class="btn2" onclick="returnToLobbyBtn()">↩ Return to lobby</button></div></div></div>
 </div>
 <div id="toast" style="position:fixed;bottom:20px;left:50%;transform:translateX(-50%);background:#151B28;border:1px solid #2A3448;padding:10px 16px;border-radius:10px;z-index:99;display:none"></div>
 <script type="module">
@@ -256,16 +256,16 @@ if(d.aero>=2){const skirt=new THREE.Mesh(new THREE.BoxGeometry(b.w+0.1,0.15,3.6)
 const lightMat=new THREE.MeshBasicMaterial({color:0xfff6c0});[-0.7,0.7].forEach(x=>{const h=new THREE.Mesh(new THREE.BoxGeometry(0.4,0.2,0.1),lightMat);h.position.set(x,0.62,2.21);g.add(h);});
 const brakeMat=new THREE.MeshBasicMaterial({color:0xff2222});[-0.7,0.7].forEach(x=>{const br=new THREE.Mesh(new THREE.BoxGeometry(0.4,0.2,0.1),brakeMat);br.position.set(x,0.62,-2.21);g.add(br);});
 g.userData.body=b;return g;}
-function makeParticles(n){if(particles)scene.remove(particles);particleData=[];const geo=new THREE.BufferGeometry();const pos=new Float32Array(n*3);geo.setAttribute("position",new THREE.BufferAttribute(pos,3));particles=new THREE.Points(geo,new THREE.PointsMaterial({color:0xcccccc,size:0.9,transparent:true,opacity:0.8}));particles.frustumCulled=false;scene.add(particles);for(let i=0;i<n;i++)particleData.push({x:0,y:-99,z:0,vx:0,vy:0,vz:0,life:0});}
-function spawnParticle(x,y,z,color,spread=1){if(!particles)return;const p=particleData.find(q=>q.life<=0);if(!p)return;p.x=x;p.y=y;p.z=z;p.vx=(Math.random()-0.5)*spread;p.vy=1+Math.random()*2;p.vz=(Math.random()-0.5)*spread;p.life=0.7;}
-function updateParticles(dt){if(!particles)return;const pos=particles.geometry.attributes.position.array;particleData.forEach((p,i)=>{if(p.life>0){p.life-=dt;p.x+=p.vx*dt*4;p.y+=p.vy*dt;p.z+=p.vz*dt*4;}else{p.y=-99;}pos[i*3]=p.x;pos[i*3+1]=p.y;pos[i*3+2]=p.z;});particles.geometry.attributes.position.needsUpdate=true;}
+function makeParticles(n){if(particles)scene.remove(particles);particleData=[];const geo=new THREE.BufferGeometry();const pos=new Float32Array(n*3);geo.setAttribute("position",new THREE.BufferAttribute(pos,3));const col=new Float32Array(n*3);geo.setAttribute("color",new THREE.BufferAttribute(col,3));particles=new THREE.Points(geo,new THREE.PointsMaterial({color:0xffffff,size:0.9,transparent:true,opacity:0.8,vertexColors:true}));particles.frustumCulled=false;scene.add(particles);for(let i=0;i<n;i++)particleData.push({x:0,y:-99,z:0,vx:0,vy:0,vz:0,life:0,r:0.8,g:0.8,b:0.8});}
+function spawnParticle(x,y,z,color,spread=1){if(!particles)return;const p=particleData.find(q=>q.life<=0);if(!p)return;p.x=x;p.y=y;p.z=z;p.vx=(Math.random()-0.5)*spread;p.vy=1+Math.random()*2;p.vz=(Math.random()-0.5)*spread;p.life=0.7;const _c=new THREE.Color(color==null?0xcccccc:color);p.r=_c.r;p.g=_c.g;p.b=_c.b;}
+function updateParticles(dt){if(!particles)return;const pos=particles.geometry.attributes.position.array;const col=particles.geometry.attributes.color.array;particleData.forEach((p,i)=>{if(p.life>0){p.life-=dt;p.x+=p.vx*dt*4;p.y+=p.vy*dt;p.z+=p.vz*dt*4;}else{p.y=-99;}pos[i*3]=p.x;pos[i*3+1]=p.y;pos[i*3+2]=p.z;col[i*3]=p.life>0?p.r:0;col[i*3+1]=p.life>0?p.g:0;col[i*3+2]=p.life>0?p.b:0;});particles.geometry.attributes.position.needsUpdate=true;particles.geometry.attributes.color.needsUpdate=true;}
 
 
 /* ---------- race core ---------- */
 function fmt(t){if(t==null||!isFinite(t))return "—";const m=Math.floor(t/60),s=t-m*60;return m+":"+s.toFixed(1).padStart(4,"0");}
 function nearestIdx(car,info){let best=car.idx,bd=1e9;for(let k=-30;k<=30;k++){const i=(car.idx+k+info.samples.length)%info.samples.length;const p=info.samples[i];const d=(p.x-car.x)**2+(p.z-car.z)**2;if(d<bd){bd=d;best=i;}}return best;}
 function distToTrack(car,info){const p=info.samples[((car.idx%info.samples.length)+info.samples.length)%info.samples.length];return Math.hypot(car.x-p.x,car.z-p.z);}
-function makeCar(design,isPlayer,name,colorOverride){const mesh=buildCarMesh(design);if(colorOverride)mesh.children[0].material.color.set(colorOverride);scene.add(mesh);liveRaceMeshes.push(mesh);const st=calcStats(design);return{x:0,z:0,ang:0,speed:0,idx:0,lap:1,lapStart:0,lastLap:null,finished:false,finishedAt:0,damage:0,nitro:100,drift:0,score:0,mesh,design,isPlayer,name,top:st.speed,offroad:false,eliminated:false,ghost:false,lastBump:-99,cruise:null};}
+function makeCar(design,isPlayer,name,colorOverride){const mesh=buildCarMesh(design);if(colorOverride)mesh.children[0].material.color.set(colorOverride);scene.add(mesh);liveRaceMeshes.push(mesh);const st=calcStats(design);return{x:0,z:0,ang:0,speed:0,idx:0,lap:1,lapStart:0,lastLap:null,finished:false,finishedAt:0,damage:0,nitro:100,drift:0,score:0,mesh,design,isPlayer,name,top:st.speed,offroad:false,eliminated:false,ghost:false,lastBump:-99,cruise:null,blockedSince:null};}
 function setupCars(){const info=race.info;const n=race.totalCars;const playerD=JSON.parse(JSON.stringify(curDesign()));if(isLockedDesign(playerD)){toast("That design is locked — buy its body in Garage first, or pick a free body.");showScreen("garage");return false;}
 race.cars=[];race.playerDesign=playerD;const names=["Racer 7","Vex","Mira","Jax","Nova","Rex","Luna","Kai"];const cols=["#00C8F0","#FF5A5A","#7CFC00","#FFB020","#B26BFF","#56B4E9","#FF7AB8","#999999"];
 for(let i=0;i<n;i++){let d,pl=false;if(i===0){d=playerD;pl=true;/* P2 is DELIBERATELY a distinct default car (blue #56B4E9, #42, "P2") and does
@@ -301,7 +301,15 @@ function applyLobbySettings(){if(!race)return;race.track=TRACKS.find(t=>t.name==
 function startRaceCommon(){if(!race){toast("No race configured.");return;}hideToast();race.lastFrame=performance.now();countdownOn=true;const _loading=$("raceLoading");if(_loading)_loading.classList.add("on");showScreenRace();setTimeout(()=>{try{startRaceCommonInner();}catch(e){if(_loading)_loading.classList.remove("on");toast("Race failed to start: "+(e&&e.message?e.message:e));}},30);}
 function startRaceCommonInner(){clearRaceMeshes();ensureAudio();initThree();setGfx();showScreenRace();const _rw=$("raceWrap");if(_rw)_rw.classList.toggle("split",!!race.local2);race.info=buildTrack(race.track);if(!setupCars()){const _l=$("raceLoading");if(_l)_l.classList.remove("on");countdownOn=false;return;}makeParticles(race.local2?60:gfx()==="Low"?120:gfx()==="Medium"?240:420);$("splitP1").style.display=race.local2?"block":"none";$("splitP2").style.display=race.local2?"block":"none";if(race.player&&race.playerDesign){if(race.local2)showMsg("P1 — You: "+race.playerDesign.name+" · #"+race.playerDesign.number+" "+race.playerDesign.text+" (WASD) · P2 — Player 2 · #42 P2 (Arrows, distinct blue car)");else showMsg("You: "+race.playerDesign.name+" · #"+race.playerDesign.number+" "+race.playerDesign.text);}
 if(race.mode==="Time Trial"){race.ghostPath=save.bestGhost[race.track.name]||null;if(race.ghostPath){race.ghostMesh=buildCarMesh(JSON.parse(JSON.stringify(curDesign())));race.ghostMesh.children.forEach(m=>{if(m.material)m.transparent=true;m.opacity=0.35;});scene.add(race.ghostMesh);liveRaceMeshes.push(race.ghostMesh);}race.recording=[];}
-race.startTime=performance.now();race.raceTime=0;race.elimTimer=45;race.countdown=3.2;countdownOn=true;paused=false;$("finishMenu").style.display="none";$("pauseMenu").classList.remove("on");$("touch").style.display="ontouchstart" in window?"block":"none";resetHUD();try{if(renderer.compile)renderer.compile(scene,camera);chaseCam(race.player,camera,0);renderer.render(scene,camera);}catch(e){}const _l2=$("raceLoading");if(_l2)_l2.classList.remove("on");race.lastFrame=performance.now();loop();}
+race.startTime=performance.now();race.raceTime=0;race.elimTimer=45;race.countdown=3.2;countdownOn=true;paused=false;$("finishMenu").style.display="none";$("pauseMenu").classList.remove("on");$("touch").style.display="ontouchstart" in window?"block":"none";resetHUD();
+// Snap the chase camera behind the player at race start (round-7 fix):
+// chaseCam smooths from cam.userData.smooth, which persists from the
+// previous race — after Restart (or a second lobby race) the camera started
+// far down the track and only drifted back to the grid by GO, so the
+// countdown showed tiny distant cars, or only the player car with the AI
+// behind the camera. Resetting smooth makes the first frame sit behind #99.
+if(camera)camera.userData.smooth=null;if(race.cam2)race.cam2.userData.smooth=null;
+try{if(renderer.compile)renderer.compile(scene,camera);chaseCam(race.player,camera,0);renderer.render(scene,camera);}catch(e){}const _l2=$("raceLoading");if(_l2)_l2.classList.remove("on");race.lastFrame=performance.now();loop();}
 window.startRace=()=>{const mode=$("modeSel").value;race={track:TRACKS.find(t=>t.name===$("trackSel").value)||TRACKS[0],mode,laps:+$("lapSel").value,totalCars:+$("carSel").value,ai:$("aiSel").value,local2:$("local2Sel").value==="yes",lobbyRace:false,career:mode==="Career"};if(mode==="Career"&&save.career.round<8){race.track=TRACKS[save.career.round];race.laps=3;}startRaceCommon();};
 window.quickRace=()=>{race={track:TRACKS[0],mode:"Quick Race",laps:3,totalCars:8,ai:"Pro",local2:false,lobbyRace:false};startRaceCommon();};
 window.startCareerRound=()=>{if(save.career.round>=8){toast("Career complete! Start a new career from Settings reset, or play Quick Race.");return;}race={track:TRACKS[save.career.round],mode:"Career",laps:3,totalCars:8,ai:"Pro",local2:false,lobbyRace:true,career:true};startRaceCommon();};
@@ -343,8 +351,22 @@ function inputFor(car,slot){if(car.isPlayer&&slot===0&&race.local2)return{up:key
 if(car.isPlayer&&slot===0)return{up:keys["w"]||keys["arrowup"]||touchKeys["up"],down:keys["s"]||keys["arrowdown"]||touchKeys["down"],left:keys["a"]||keys["arrowleft"]||touchKeys["left"],right:keys["d"]||keys["arrowright"]||touchKeys["right"],nitro:keys[" "]||keys["shift"]||touchKeys["nitro"]};
 if(car.isPlayer&&slot===1)return{up:keys["arrowup"],down:keys["arrowdown"],left:keys["arrowleft"],right:keys["arrowright"],nitro:keys["shift"]};
 return null;}
-function aiInput(car,dt){const info=race.info;const len=info.samples.length;const off=distToTrack(car,info)>info.W;const lookIdx=off?car.idx:(car.idx+Math.floor(4+Math.abs(car.speed)*0.18))%len;const target=info.samples[lookIdx];const baseLat=car.aiLane!=null?car.aiLane:(car.personality==="aggressive"?-2:car.personality==="defensive"?2:0);let lat=baseLat;const q=info.samples[(lookIdx+2)%len];const tan=new THREE.Vector3().subVectors(q,info.samples[lookIdx]).normalize();const nor=new THREE.Vector3(-tan.z,0,tan.x);let max=car.aiMax;{const fx=Math.sin(car.ang),fz=Math.cos(car.ang);let ahead=null,aheadAlong=1e9,aheadLat=0;race.cars.forEach(o=>{if(o===car||o.eliminated)return;const dx=o.x-car.x,dz=o.z-car.z;const along=dx*fx+dz*fz;const latOff=dx*fz-dz*fx;if(along>0&&along<16&&Math.abs(latOff)<5&&along<aheadAlong){ahead=o;aheadAlong=along;aheadLat=latOff;}});if(ahead){lat=Math.max(-6.5,Math.min(6.5,baseLat+(aheadLat>=0?4.5:-4.5)));if(aheadAlong<9)max=Math.min(max,Math.max(0,ahead.speed*0.9));if(aheadAlong<5.5)max=0;}}const tx=target.x+nor.x*lat,tz=target.z+nor.z*lat;let want=Math.atan2(tx-car.x,tz-car.z);let diff=((want-car.ang+Math.PI*3)%(Math.PI*2))-Math.PI;const steer=Math.max(-1,Math.min(1,diff*2.2));const curve=Math.abs(diff);max*=curve>0.6?0.55:1;return{up:Math.abs(car.speed)<max,down:false,left:steer<-0.15,right:steer>0.15,nitro:false,steerVal:steer};}
-function updateCar(car,dt,inp){const info=race.info;const st=calcStats(car.design);const dmgF=1-car.damage/200;const top=(car.isPlayer?st.speed:car.aiMax)*(car.offroad?0.55:1)*dmgF;const acc=(car.isPlayer?14+st.acc*0.06:13)*dmgF;let steer=0;if(inp){if(inp.steerVal!==undefined)steer=inp.steerVal;else steer=(inp.right?1:0)-(inp.left?1:0);}
+function aiInput(car,dt){const info=race.info;const len=info.samples.length;const off=distToTrack(car,info)>info.W;const lookIdx=off?car.idx:(car.idx+Math.floor(4+Math.abs(car.speed)*0.18))%len;const target=info.samples[lookIdx];const baseLat=car.aiLane!=null?car.aiLane:(car.personality==="aggressive"?-2:car.personality==="defensive"?2:0);let lat=baseLat;const q=info.samples[(lookIdx+2)%len];const tan=new THREE.Vector3().subVectors(q,info.samples[lookIdx]).normalize();const nor=new THREE.Vector3(-tan.z,0,tan.x);
+// Finished AI cars drive a cool-down lap at 40% speed (round-7 fix) instead
+// of parking on the racing line — see tickFrame.
+let max=car.finished?car.aiMax*0.4:car.aiMax;{const fx=Math.sin(car.ang),fz=Math.cos(car.ang);let ahead=null,aheadAlong=1e9,aheadLat=0;race.cars.forEach(o=>{if(o===car||o.eliminated)return;const dx=o.x-car.x,dz=o.z-car.z;const along=dx*fx+dz*fz;const latOff=dx*fz-dz*fx;if(along>0&&along<16&&Math.abs(latOff)<5&&along<aheadAlong){ahead=o;aheadAlong=along;aheadLat=latOff;}});if(ahead){let side=aheadLat>=0?1:-1;
+// If the car ahead is slow/stopped and we have sat behind it, try the
+// other side — a car that only ever dodges one way can stay wedged behind
+// a stationary player forever. Flip at most once every 2 race-seconds.
+if(aheadAlong<5.5&&ahead.speed<10){if(car.blockedSince==null)car.blockedSince=race.raceTime;else if(race.raceTime-car.blockedSince>2){side=-side;car.blockedSince=race.raceTime;}}else car.blockedSince=null;
+lat=Math.max(-7.5,Math.min(7.5,baseLat+side*4.5));
+// Never hard-stop behind a car (round-7 fix): the old code set max=0
+// within 5.5 m, so a car behind a stationary player decayed to 0 mph and
+// sat there with inp.up=false — and the stuck-recovery gate (which needed
+// recent throttle) could then never fire. Creep at 12 mph instead, so the
+// car keeps edging around the blocker.
+if(aheadAlong<9)max=Math.min(max,Math.max(12,ahead.speed*0.9));if(aheadAlong<5.5)max=Math.min(max,Math.max(12,ahead.speed*0.5));}}const tx=target.x+nor.x*lat,tz=target.z+nor.z*lat;let want=Math.atan2(tx-car.x,tz-car.z);let diff=((want-car.ang+Math.PI*3)%(Math.PI*2))-Math.PI;const steer=Math.max(-1,Math.min(1,diff*2.2));const curve=Math.abs(diff);max*=curve>0.6?0.55:1;return{up:Math.abs(car.speed)<max,down:false,left:steer<-0.15,right:steer>0.15,nitro:false,steerVal:steer};}
+function updateCar(car,dt,inp){const info=race.info;const st=calcStats(car.design);const dmgF=1-car.damage/200;const top=(car.isPlayer?st.speed:(car.finished?car.aiMax*0.4:car.aiMax))*(car.offroad?0.55:1)*dmgF;const acc=(car.isPlayer?14+st.acc*0.06:13)*dmgF;let steer=0;if(inp){if(inp.steerVal!==undefined)steer=inp.steerVal;else steer=(inp.right?1:0)-(inp.left?1:0);}
 const slip=Math.abs(steer)*Math.min(1,Math.abs(car.speed)/60);
 const cruising=car.isPlayer&&car.cruise!=null;
 // Cruise control: hold the engaged speed with auto-throttle and NO decel
@@ -395,11 +417,27 @@ if(countdownOn){race.countdown-=dt;resetHUD();const c=Math.ceil(race.countdown);
 race.raceTime+=dt;const info=race.info;
 // elimination timer
 if(race.mode==="Elimination"){race.elimTimer-=dt;const alive=race.cars.filter(c=>!c.eliminated);if(race.elimTimer<=0&&alive.length>1){const last=rankCars().pop();last.eliminated=true;last.mesh.visible=false;showMsg(last.name+" eliminated!");race.elimTimer=45;if(last.isPlayer){finishRace();return;}}}
-race.cars.forEach((c,i)=>{if(c.eliminated||c.finished)return;const inp=c.isPlayer?inputFor(c,i):aiInput(c,dt);if(inp&&(inp.up||(c.isPlayer&&c.cruise!=null)))c.lastThrottleAt=race.raceTime;updateCar(c,dt,inp);
-// Stuck recovery now REQUIRES recent throttle input. Previously off-road
-// alone triggered it, so a creeping car with no input was re-centred at
-// 25 mph at ~0:04 — free speed that drove it straight into the barrier again.
-if(Math.abs(c.speed)<8&&race.raceTime-(c.lastThrottleAt==null?-99:c.lastThrottleAt)<2){if(!c.stuckSince)c.stuckSince=race.raceTime;else if(race.raceTime-c.stuckSince>2.5){const _p=race.info.samples[c.idx],_q=race.info.samples[(c.idx+1)%race.info.samples.length];const _st=new THREE.Vector3().subVectors(_q,_p).normalize();const _sn=new THREE.Vector3(-_st.z,0,_st.x);const _sl=c.aiLane||0;c.x=_p.x+_sn.x*_sl;c.z=_p.z+_sn.z*_sl;c.ang=Math.atan2(_q.x-_p.x,_q.z-_p.z);c.speed=(c.isPlayer&&inp&&inp.up)?25:0;c.stuckSince=null;if(c.isPlayer)showMsg("Stuck — car re-centred on track.");}}else c.stuckSince=null;});
+race.cars.forEach((c,i)=>{if(c.eliminated)return;
+// Finished AI cars keep driving a cool-down lap (round-7 fix) instead of
+// being skipped: the old loop returned early for ANY finished car, so all
+// AI "finished" their 3 laps in ~25 race-seconds and froze in a parked
+// cluster on the racing line at the start/finish line — speed still reading
+// 119-153 mph, positions pixel-identical for 20+ race-seconds, which QA
+// rightly read as a pile-up. A finished PLAYER still stops here, because
+// finishRace() has already shown their finish menu.
+if(c.finished&&c.isPlayer)return;
+const inp=c.isPlayer?inputFor(c,i):aiInput(c,dt);if(inp&&(inp.up||(c.isPlayer&&c.cruise!=null)))c.lastThrottleAt=race.raceTime;updateCar(c,dt,inp);
+// Stuck recovery REQUIRES recent throttle input for PLAYERS only (round-7
+// fix): previously off-road alone triggered it, so a creeping car with no
+// input was re-centred at 25 mph at ~0:04 — free speed that drove it
+// straight into the barrier again — so the gate stays for players, and a
+// no-input parked player is never re-centred. But the same gate must NOT
+// apply to AI cars: an AI blocked behind a slow car has inp.up=false
+// (avoidance caps its speed), so lastThrottleAt goes stale and recovery
+// could never fire — the car sat at 0 mph forever while the clock
+// advanced. AI always intend to move, so a slow AI is stuck by definition.
+const _throttleOk=!c.isPlayer||race.raceTime-(c.lastThrottleAt==null?-99:c.lastThrottleAt)<2;
+if(Math.abs(c.speed)<8&&_throttleOk){if(!c.stuckSince)c.stuckSince=race.raceTime;else if(race.raceTime-c.stuckSince>2.5){const _p=race.info.samples[c.idx],_q=race.info.samples[(c.idx+1)%race.info.samples.length];const _st=new THREE.Vector3().subVectors(_q,_p).normalize();const _sn=new THREE.Vector3(-_st.z,0,_st.x);const _sl=c.aiLane||0;c.x=_p.x+_sn.x*_sl;c.z=_p.z+_sn.z*_sl;c.ang=Math.atan2(_q.x-_p.x,_q.z-_p.z);c.speed=(c.isPlayer&&inp&&inp.up)?25:0;c.stuckSince=null;c.blockedSince=null;if(c.isPlayer)showMsg("Stuck — car re-centred on track.");}}else c.stuckSince=null;});
 separateCars();
 // ghost + recording
 if(race.mode==="Time Trial"){if(race.ghostPath&&race.ghostMesh){const gi=Math.floor(race.raceTime*20)%race.ghostPath.length;const gp=race.ghostPath[gi];race.ghostMesh.position.set(gp[0],0,gp[1]);race.ghostMesh.rotation.y=gp[2]||0;}if(race.raceTime%0.05< dt)race.recording.push([race.player.x,race.player.z,race.player.ang]);if(race.recording.length>20000)race.recording.splice(0,1000);}
@@ -451,7 +489,7 @@ function fbLeave(){fbLeavePosition();if(fbRoomRef)fbRoomRef.off();lobby={code:nu
 window.fbLeave=fbLeave;
 function fbLeavePosition(){if(!fbReady||!lobby.code||!fbUid)return;firebase.database().ref(fbRoomPath()+"/positions/"+fbUid).remove().catch(()=>{});}
 window.fbLeavePosition=fbLeavePosition;
-function fbSetReady(v){if(fbReady&&lobby.code&&fbUid)firebase.database().ref(fbRoomPath()+"/players/"+fbUid+"/ready").set(v).catch(()=>{});}
+function fbSetReady(v){lobby.ready=v;if(fbReady&&lobby.code&&fbUid)firebase.database().ref(fbRoomPath()+"/players/"+fbUid+"/ready").set(v).catch(()=>{});}
 window.fbSetReady=fbSetReady;
 function toggleReady(){lobby.ready=!lobby.ready;fbSetReady(lobby.ready);renderLobby();}
 window.toggleReady=toggleReady;
