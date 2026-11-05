@@ -256,9 +256,22 @@ if(d.aero>=2){const skirt=new THREE.Mesh(new THREE.BoxGeometry(b.w+0.1,0.15,3.6)
 const lightMat=new THREE.MeshBasicMaterial({color:0xfff6c0});[-0.7,0.7].forEach(x=>{const h=new THREE.Mesh(new THREE.BoxGeometry(0.4,0.2,0.1),lightMat);h.position.set(x,0.62,2.21);g.add(h);});
 const brakeMat=new THREE.MeshBasicMaterial({color:0xff2222});[-0.7,0.7].forEach(x=>{const br=new THREE.Mesh(new THREE.BoxGeometry(0.4,0.2,0.1),brakeMat);br.position.set(x,0.62,-2.21);g.add(br);});
 g.userData.body=b;return g;}
-function makeParticles(n){if(particles)scene.remove(particles);particleData=[];const geo=new THREE.BufferGeometry();const pos=new Float32Array(n*3);geo.setAttribute("position",new THREE.BufferAttribute(pos,3));const col=new Float32Array(n*3);geo.setAttribute("color",new THREE.BufferAttribute(col,3));particles=new THREE.Points(geo,new THREE.PointsMaterial({color:0xffffff,size:0.9,transparent:true,opacity:0.8,vertexColors:true}));particles.frustumCulled=false;scene.add(particles);for(let i=0;i<n;i++)particleData.push({x:0,y:-99,z:0,vx:0,vy:0,vz:0,life:0,r:0.8,g:0.8,b:0.8});}
-function spawnParticle(x,y,z,color,spread=1){if(!particles)return;const p=particleData.find(q=>q.life<=0);if(!p)return;p.x=x;p.y=y;p.z=z;p.vx=(Math.random()-0.5)*spread;p.vy=1+Math.random()*2;p.vz=(Math.random()-0.5)*spread;p.life=0.7;const _c=new THREE.Color(color==null?0xcccccc:color);p.r=_c.r;p.g=_c.g;p.b=_c.b;}
-function updateParticles(dt){if(!particles)return;const pos=particles.geometry.attributes.position.array;const col=particles.geometry.attributes.color.array;particleData.forEach((p,i)=>{if(p.life>0){p.life-=dt;p.x+=p.vx*dt*4;p.y+=p.vy*dt;p.z+=p.vz*dt*4;}else{p.y=-99;}pos[i*3]=p.x;pos[i*3+1]=p.y;pos[i*3+2]=p.z;col[i*3]=p.life>0?p.r:0;col[i*3+1]=p.life>0?p.g:0;col[i*3+2]=p.life>0?p.b:0;});particles.geometry.attributes.position.needsUpdate=true;particles.geometry.attributes.color.needsUpdate=true;}
+// Particles are soft ROUND puffs, not squares (round-8 fix): THREE.PointsMaterial
+// renders hard-edged squares by default, so a grey skid particle read as a
+// white/grey square of debris sitting on the track. A radial-gradient sprite
+// texture makes each point a soft round puff, and ADDITIVE blending means a
+// particle whose colour fades to black fades to INVISIBLE (with normal
+// blending it would fade to a black square). Colour fades over the particle's
+// life instead of popping out at full brightness.
+// A second bug: the position buffer started all-zero, so before the first
+// updateParticles() call (which never runs during the countdown) every
+// particle sat at the world origin (0,0,0) — inside the track loop — as one
+// black square. Dead/unused particles now start at y=-99 with colour 0.
+let particleTex=null;
+function particleTexture(){if(particleTex)return particleTex;const cv=document.createElement("canvas");cv.width=64;cv.height=64;const c=cv.getContext("2d");const g=c.createRadialGradient(32,32,0,32,32,32);g.addColorStop(0,"rgba(255,255,255,1)");g.addColorStop(0.4,"rgba(255,255,255,0.6)");g.addColorStop(1,"rgba(255,255,255,0)");c.fillStyle=g;c.fillRect(0,0,64,64);particleTex=new THREE.CanvasTexture(cv);return particleTex;}
+function makeParticles(n){if(particles)scene.remove(particles);particleData=[];const geo=new THREE.BufferGeometry();const pos=new Float32Array(n*3);for(let i=0;i<n;i++)pos[i*3+1]=-99;geo.setAttribute("position",new THREE.BufferAttribute(pos,3));const col=new Float32Array(n*3);geo.setAttribute("color",new THREE.BufferAttribute(col,3));particles=new THREE.Points(geo,new THREE.PointsMaterial({color:0xffffff,size:0.7,map:particleTexture(),transparent:true,opacity:0.55,vertexColors:true,depthWrite:false,alphaTest:0.01,blending:THREE.AdditiveBlending}));particles.frustumCulled=false;scene.add(particles);for(let i=0;i<n;i++)particleData.push({x:0,y:-99,z:0,vx:0,vy:0,vz:0,life:0,maxLife:0.7,r:0.8,g:0.8,b:0.8});}
+function spawnParticle(x,y,z,color,spread=1){if(!particles)return;const p=particleData.find(q=>q.life<=0);if(!p)return;p.x=x;p.y=y;p.z=z;p.vx=(Math.random()-0.5)*spread;p.vy=1.5+Math.random()*2.5;p.vz=(Math.random()-0.5)*spread;p.maxLife=0.7;p.life=0.7;const _c=new THREE.Color(color==null?0xcccccc:color);p.r=_c.r;p.g=_c.g;p.b=_c.b;}
+function updateParticles(dt){if(!particles)return;const pos=particles.geometry.attributes.position.array;const col=particles.geometry.attributes.color.array;particleData.forEach((p,i)=>{if(p.life>0){p.life-=dt;if(p.life<=0){p.y=-99;}else{p.x+=p.vx*dt*4;p.y+=p.vy*dt;p.z+=p.vz*dt*4;}}else{p.y=-99;}pos[i*3]=p.x;pos[i*3+1]=p.y;pos[i*3+2]=p.z;const f=p.life>0?p.life/(p.maxLife||0.7):0;col[i*3]=p.r*f;col[i*3+1]=p.g*f;col[i*3+2]=p.b*f;});particles.geometry.attributes.position.needsUpdate=true;particles.geometry.attributes.color.needsUpdate=true;}
 
 
 /* ---------- race core ---------- */
@@ -397,9 +410,9 @@ if(distToTrack(car,info)>info.W+2.2){if(Math.abs(car.speed)>2)car.damage=Math.mi
 // Wall penalties were per-frame (speed x0.92 and a 30% position snap EVERY
 // frame), so at 60 fps a latched car collapsed 55->~10 mph in under a second
 // whenever it touched the wall zone. Both are now dt-scaled.
-car.speed*=Math.max(0,1-0.35*dt);const _pull=Math.max(0,1-2.0*dt);car.x=info.samples[car.idx].x+(car.x-info.samples[car.idx].x)*_pull;car.z=info.samples[car.idx].z+(car.z-info.samples[car.idx].z)*_pull;if(distToTrack(car,info)>info.W+8){const _p=info.samples[car.idx],_q=info.samples[(car.idx+1)%info.samples.length];car.x=_p.x;car.z=_p.z;car.ang=Math.atan2(_q.x-_p.x,_q.z-_p.z);car.speed=(inp&&inp.up)?20:0;}if(Math.random()<0.5)spawnParticle(car.x,0.6,car.z,0xffaa00,3);}
+car.speed*=Math.max(0,1-0.35*dt);const _pull=Math.max(0,1-2.0*dt);car.x=info.samples[car.idx].x+(car.x-info.samples[car.idx].x)*_pull;car.z=info.samples[car.idx].z+(car.z-info.samples[car.idx].z)*_pull;if(distToTrack(car,info)>info.W+8){const _p=info.samples[car.idx],_q=info.samples[(car.idx+1)%info.samples.length];car.x=_p.x;car.z=_p.z;car.ang=Math.atan2(_q.x-_p.x,_q.z-_p.z);car.speed=(inp&&inp.up)?20:0;}if(Math.random()<0.25)spawnParticle(car.x,0.6,car.z,0xffaa00,3);}
 car.drift=Math.abs(steer)*Math.min(1,Math.abs(car.speed)/70);if(race.mode==="Drift Mode"&&car.isPlayer&&car.drift>0.4&&Math.abs(car.speed)>20)car.score+=car.drift*Math.abs(car.speed)*dt*2;
-car.mesh.position.set(car.x,car.design.stance?0.02:0,car.z);car.mesh.rotation.y=car.ang;car.mesh.children.forEach((w,i)=>{});if(Math.abs(car.speed)>30&&Math.abs(steer)>0.5)spawnParticle(car.x,0.2,car.z,0xaaaaaa,1);
+car.mesh.position.set(car.x,car.design.stance?0.02:0,car.z);car.mesh.rotation.y=car.ang;car.mesh.children.forEach((w,i)=>{});if(Math.abs(car.speed)>30&&Math.abs(steer)>0.5&&Math.random()<0.5)spawnParticle(car.x,0.4,car.z,0xaaaaaa,1);
 // lap logic: a wrap only counts after the car has passed mid-track in this lap,
 // so grid cars offset sideways from the start line (whose nearest sample is just
 // behind the line) do not gain a lap merely by reaching the start.
