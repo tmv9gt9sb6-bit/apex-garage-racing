@@ -379,7 +379,7 @@ lat=Math.max(-7.5,Math.min(7.5,baseLat+side*4.5));
 // recent throttle) could then never fire. Creep at 12 mph instead, so the
 // car keeps edging around the blocker.
 if(aheadAlong<9)max=Math.min(max,Math.max(12,ahead.speed*0.9));if(aheadAlong<5.5)max=Math.min(max,Math.max(12,ahead.speed*0.5));}}const tx=target.x+nor.x*lat,tz=target.z+nor.z*lat;let want=Math.atan2(tx-car.x,tz-car.z);let diff=((want-car.ang+Math.PI*3)%(Math.PI*2))-Math.PI;const steer=Math.max(-1,Math.min(1,diff*2.2));const curve=Math.abs(diff);max*=curve>0.6?0.55:1;return{up:Math.abs(car.speed)<max,down:false,left:steer<-0.15,right:steer>0.15,nitro:false,steerVal:steer};}
-function updateCar(car,dt,inp){const info=race.info;const st=calcStats(car.design);const dmgF=1-car.damage/200;const top=(car.isPlayer?st.speed:(car.finished?car.aiMax*0.4:car.aiMax))*(car.offroad?0.55:1)*dmgF;const acc=(car.isPlayer?14+st.acc*0.06:13)*dmgF;let steer=0;if(inp){if(inp.steerVal!==undefined)steer=inp.steerVal;else steer=(inp.right?1:0)-(inp.left?1:0);}
+function updateCar(car,dt,inp){const info=race.info;const st=calcStats(car.design);const dmgF=1-car.damage/200;const top=(car.isPlayer?st.speed:(car.finished?car.aiMax*0.4:car.aiMax))*(car.offroad?0.55:1)*dmgF;const acc=(car.isPlayer?14+st.acc*0.06:13)*dmgF;let steer=0;if(inp){if(inp.steerVal!==undefined)steer=inp.steerVal;else steer=(inp.left?1:0)-(inp.right?1:0);}
 const slip=Math.abs(steer)*Math.min(1,Math.abs(car.speed)/60);
 const cruising=car.isPlayer&&car.cruise!=null;
 // Cruise control: hold the engaged speed with auto-throttle and NO decel
@@ -396,7 +396,7 @@ if(car.isPlayer&&inp&&(inp.up||cruising)&&!inp.left&&!inp.right&&inp.steerVal===
 // Off-road assist: when off the road, gently steer toward the centreline so a
 // tap-only driver (no steering input) does not beach the car on the first bend.
 if(car.offroad){const _np=info.samples[((car.idx%info.samples.length)+info.samples.length)%info.samples.length];const _want=Math.atan2(_np.x-car.x,_np.z-car.z);let _diff=((_want-car.ang+Math.PI*3)%(Math.PI*2))-Math.PI;steer=steer*0.5+Math.max(-1,Math.min(1,_diff*1.5))*0.5;}
-const turn=steer*1.9*(0.35+Math.min(1,Math.abs(car.speed)/80))*(car.design.tire==="dirt"&&car.offroad?1.1:1);car.ang+=turn*dt*Math.sign(car.speed||1)*(car.speed>=0?1:-1);
+const turn=steer*1.9*(0.35+Math.min(1,Math.abs(car.speed)/80))*(car.design.tire==="dirt"&&car.offroad?1.1:1);car.ang+=turn*dt*Math.sign(car.speed||1);
 const fx=Math.sin(car.ang),fz=Math.cos(car.ang);car.x+=fx*car.speed*dt;car.z+=fz*car.speed*dt;
 // drafting — ONLY while on the throttle. Previously this ran with no input
 // at all, so a car on the grid crept forward at 5-6 mph on its own (several
